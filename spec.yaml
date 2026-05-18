@@ -1,0 +1,157 @@
+id: multitooling_pool
+name: Multitooling Pool
+type: diagnostic_overlay_proposal
+status: proposal
+version: 1.0.0
+
+purpose:
+  short: "Show whether the app is alive, connected, interrupted, or waiting."
+  user_translation: "A small visible status and warning layer."
+
+scope:
+  included:
+    - client_status
+    - server_status
+    - websocket_status
+    - uptime
+    - last_heartbeat
+    - recent_events
+    - last_error
+    - practical_hint
+    - expandable_status_items
+    - user_configurable_auto_open_rules
+    - snapshot_export
+  excluded:
+    - full_admin_dashboard
+    - cloud_telemetry
+    - sensitive_user_data_logging
+    - destructive_runtime_changes
+    - automated remote control
+
+ui:
+  trigger: "Ctrl+Shift+M"
+  mode: "overlay"
+  default_view: "compact"
+  every_status_item_clickable: true
+  every_event_clickable: true
+
+status_fields:
+  client_status: "online | offline | unknown"
+  server_status: "reachable | unreachable | unknown"
+  websocket_status: "connected | disconnected | reconnecting | unknown"
+  uptime: "duration"
+  last_heartbeat: "relative time or null"
+  practical_hint: "one short deterministic next-step message"
+  auto_open_status: "enabled | disabled | snoozed | user_configured"
+  last_error: "short sanitized error summary or null"
+
+event_schema:
+  schema_version: "1.0.0"
+  fields:
+    id: "string"
+    type: "string"
+    timestamp: "ISO-8601 string"
+    source: "client | server | shared"
+    payload: "object"
+    meta: "object"
+
+event_types:
+  - client.started
+  - server.started
+  - websocket.connected
+  - websocket.disconnected
+  - websocket.reconnecting
+  - heartbeat.sent
+  - heartbeat.received
+  - error.captured
+  - snapshot.created
+  - hint.generated
+  - auto_open.triggered
+  - auto_open.dismissed
+  - auto_open.rule_changed
+  - item.expanded
+  - item.collapsed
+  - state.resolved
+
+hint_rules:
+  - when: "server_status == unreachable"
+    hint: "Server not reachable. Start the server or check the configured port."
+  - when: "websocket_status == disconnected"
+    hint: "WebSocket disconnected. Check whether the backend is running."
+  - when: "recent_events.length == 0"
+    hint: "No events yet. Interact with the app to generate the first event."
+  - when: "last_error.source == client"
+    hint: "Last error came from the client. Check recent UI actions or browser console."
+  - when: "last_error.source == server"
+    hint: "Last error came from the server. Check server logs."
+  - when: "last_heartbeat.age_seconds > 15"
+    hint: "Heartbeat is stale. Connection may be delayed or interrupted."
+  - when: "websocket_status == connected && last_heartbeat.age_seconds <= 15"
+    hint: "Heartbeat is healthy. System appears connected."
+
+auto_open:
+  enabled_by_default: true
+  default_mode: "user_configured"
+  cooldown_seconds: 30
+  allow_session_snooze: true
+  allow_disable_for_session: true
+  user_can_edit_rules: true
+  reveal_modes:
+    - log_only
+    - badge_only
+    - auto_open
+    - auto_open_once_per_session
+    - muted_for_session
+
+default_auto_open_rules:
+  - id: client_started
+    label: "Client started"
+    severity: info
+    default_reveal_mode: log_only
+    user_editable: true
+  - id: server_unreachable
+    label: "Server unreachable"
+    severity: critical
+    default_reveal_mode: auto_open
+    user_editable: true
+  - id: websocket_disconnected
+    label: "WebSocket disconnected"
+    severity: warning
+    default_reveal_mode: badge_only
+    user_editable: true
+  - id: websocket_reconnect_failed
+    label: "Repeated reconnect failed"
+    severity: critical
+    default_reveal_mode: auto_open
+    user_editable: true
+  - id: heartbeat_stale
+    label: "Heartbeat stale"
+    severity: warning
+    default_reveal_mode: badge_only
+    user_editable: true
+  - id: critical_error
+    label: "Critical error"
+    severity: critical
+    default_reveal_mode: auto_open
+    user_editable: true
+  - id: state_recovered
+    label: "State recovered"
+    severity: info
+    default_reveal_mode: log_only
+    user_editable: true
+
+governance:
+  non_destructive: true
+  local_first: true
+  no_sensitive_raw_data: true
+  user_controls_auto_open_logic: true
+  easy_to_disable: true
+
+definition_of_done:
+  - "Proposal is documented."
+  - "Status fields are clear."
+  - "Event schema is clear."
+  - "Hint rules are clear."
+  - "Auto-open rules are user-configurable."
+  - "Status lines and events are expandable/clickable."
+  - "Maintainers can accept, reject, or adapt the idea."

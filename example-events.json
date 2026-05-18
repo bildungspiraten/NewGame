@@ -1,0 +1,64 @@
+[
+  {
+    "id": "evt_001",
+    "type": "client.started",
+    "timestamp": "2026-05-18T21:30:00.000Z",
+    "source": "client",
+    "payload": {},
+    "meta": {
+      "schemaVersion": "1.0.0"
+    }
+  },
+  {
+    "id": "evt_002",
+    "type": "websocket.connected",
+    "timestamp": "2026-05-18T21:30:02.000Z",
+    "source": "client",
+    "payload": {
+      "status": "connected"
+    },
+    "meta": {
+      "schemaVersion": "1.0.0"
+    }
+  },
+  {
+    "id": "evt_003",
+    "type": "heartbeat.received",
+    "timestamp": "2026-05-18T21:30:10.000Z",
+    "source": "server",
+    "payload": {
+      "latencyMs": 34
+    },
+    "meta": {
+      "schemaVersion": "1.0.0"
+    }
+  },
+  {
+    "id": "evt_004",
+    "type": "hint.generated",
+    "timestamp": "2026-05-18T21:30:10.050Z",
+    "source": "client",
+    "payload": {
+      "hint": "Heartbeat is healthy. System appears connected.",
+      "rule": "websocket_status == connected && last_heartbeat.age_seconds <= 15"
+    },
+    "meta": {
+      "schemaVersion": "1.0.0"
+    }
+  },
+  {
+    "id": "evt_005",
+    "type": "auto_open.rule_changed",
+    "timestamp": "2026-05-18T21:31:10.000Z",
+    "source": "client",
+    "payload": {
+      "ruleId": "websocket_disconnected",
+      "previousMode": "badge_only",
+      "newMode": "auto_open",
+      "changedByUser": true
+    },
+    "meta": {
+      "schemaVersion": "1.0.0"
+    }
+  }
+]
