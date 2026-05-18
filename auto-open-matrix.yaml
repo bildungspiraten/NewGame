@@ -1,0 +1,86 @@
+id: multitooling_pool_auto_open_matrix
+version: 1.0.0
+status: proposal
+
+principle:
+  short: "The system may warn, but the user controls the warning logic."
+  german: "Hinweise ja, Bevormundung nein."
+
+reveal_modes:
+  log_only:
+    label: "Log only"
+    behavior: "Store/display in event list only."
+  badge_only:
+    label: "Badge only"
+    behavior: "Show a subtle indicator without opening the overlay."
+  auto_open:
+    label: "Auto-open"
+    behavior: "Open overlay automatically, respecting cooldown."
+  auto_open_once_per_session:
+    label: "Once per session"
+    behavior: "Open automatically only once in the current browser session."
+  muted_for_session:
+    label: "Muted for session"
+    behavior: "Do not show or open for this session."
+
+default_rules:
+  - id: client_started
+    label: "Client started"
+    event_type: client.started
+    severity: info
+    default_reveal_mode: log_only
+    user_editable: true
+
+  - id: server_unreachable
+    label: "Server unreachable"
+    event_type: server.unreachable
+    severity: critical
+    default_reveal_mode: auto_open
+    user_editable: true
+
+  - id: websocket_disconnected
+    label: "WebSocket disconnected"
+    event_type: websocket.disconnected
+    severity: warning
+    default_reveal_mode: badge_only
+    user_editable: true
+
+  - id: websocket_reconnect_failed
+    label: "Repeated reconnect failed"
+    event_type: websocket.reconnect_failed
+    severity: critical
+    default_reveal_mode: auto_open
+    user_editable: true
+
+  - id: heartbeat_stale
+    label: "Heartbeat stale"
+    event_type: heartbeat.stale
+    severity: warning
+    default_reveal_mode: badge_only
+    user_editable: true
+
+  - id: critical_error
+    label: "Critical error"
+    event_type: error.captured
+    severity: critical
+    default_reveal_mode: auto_open
+    user_editable: true
+
+  - id: state_recovered
+    label: "State recovered"
+    event_type: state.resolved
+    severity: info
+    default_reveal_mode: log_only
+    user_editable: true
+
+persistence:
+  default_storage: "localStorage"
+  key: "multitooling.pool.autoOpenRules"
+  reset_to_defaults: true
+  export_in_snapshot: true
+
+guardrails:
+  cooldown_seconds_default: 30
+  user_can_snooze_session: true
+  user_can_disable_session: true
+  do_not_auto_open_for_info_by_default: true
