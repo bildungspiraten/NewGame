@@ -1,0 +1,48 @@
+id: memory-erster-tag-001
+name: "Der erste Tag"
+version: 1
+type: memory
+rarity: common
+cost: 1
+
+stats:
+  attack: 0
+  defense: 2
+  emotion_power: 3
+
+effects:
+  - trigger: on_play
+    action:
+      type: heal
+      target: self
+      amount: 2
+  - trigger: on_play
+    action:
+      type: story_fragment
+      fragment_id: "anfang-chapter-1"
+
+media:
+  image: "assets/cards/erster-tag.webp"
+  audio: null
+  video_clip: null
+
+lore:
+  text: >
+    Alles beginnt mit einem ersten Tag.
+    Manchmal weißt du nicht, dass es der erste ist,
+    bis viele danach vergangen sind.
+  chapter: "DER_ANFANG"
+  emotion_tag: neugier
+  unlock_condition: null
+
+ai_tags:
+  - memory
+  - defensive
+  - story_trigger
+  - low_cost
+  - healing
+
+collectible:
+  obtained_from: starter_deck
+  tradeable: false
+  flavor_quote: "Der erste Schritt beginnt immer mit einem Zögern."

@@ -1,0 +1,61 @@
+id: legendary-sommernacht-001
+name: "Die Sommernacht"
+version: 1
+type: legendary
+rarity: legendary
+cost: 7
+
+stats:
+  attack: 5
+  defense: 5
+  emotion_power: 15
+
+effects:
+  - trigger: on_play
+    action:
+      type: legendary_event
+      event_id: "trailer-sommernacht"
+      youtube_key: null          # optional: YouTube Trailer-ID eintragen
+      duration_seconds: 60
+  - trigger: on_play
+    action:
+      type: deal_damage
+      target: all_enemies
+      amount: 3
+  - trigger: on_play
+    action:
+      type: heal
+      target: self
+      amount: 5
+  - trigger: on_play
+    action:
+      type: story_fragment
+      fragment_id: "sommernacht-finale"
+
+media:
+  image: "assets/cards/sommernacht.webp"
+  audio: "assets/audio/sommernacht-theme.mp3"
+  video_clip: null
+  tmdb_id: null                  # optional: TMDB Film-ID
+
+lore:
+  text: >
+    Es gibt Nächte, die länger dauern als ihre Stunden.
+    Diese war eine davon.
+    Der Sommer, der niemals wirklich endete.
+  chapter: "DER_HÖHEPUNKT"
+  emotion_tag: euphorie
+  unlock_condition: "match.won.count >= 5"
+
+ai_tags:
+  - legendary
+  - aoe_damage
+  - healing
+  - story_climax
+  - high_cost
+  - trailer_event
+
+collectible:
+  obtained_from: match_reward
+  tradeable: false
+  flavor_quote: "Diese Nacht existiert in uns, solange wir uns erinnern."

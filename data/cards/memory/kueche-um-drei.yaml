@@ -1,0 +1,49 @@
+id: place-kueche-um-drei-001
+name: "Küche um 3 Uhr nachts"
+version: 1
+type: place
+rarity: uncommon
+cost: 2
+
+stats:
+  attack: 0
+  defense: 4
+  emotion_power: 4
+
+effects:
+  - trigger: on_play
+    action:
+      type: mana_bonus
+      target: self
+      amount: 1
+      duration: next_turn
+  - trigger: on_play
+    action:
+      type: draw
+      count: 1
+
+media:
+  image: "assets/cards/kueche-nachts.webp"
+  audio: "assets/audio/kueche-ambient.mp3"
+  video_clip: null
+
+lore:
+  text: >
+    Der Kühlschrank summt. Das Licht ist zu hell.
+    Alle Probleme der Welt werden kleiner
+    bei einem Glas Wasser um drei.
+  chapter: "DIE_STILLE_STUNDEN"
+  emotion_tag: geborgenheit
+  unlock_condition: "match.played.count >= 2"
+
+ai_tags:
+  - place
+  - mana_generation
+  - draw
+  - defensive
+  - sanctuary
+
+collectible:
+  obtained_from: starter_deck
+  tradeable: true
+  flavor_quote: "Hier wurden die wichtigsten Entscheidungen getroffen."

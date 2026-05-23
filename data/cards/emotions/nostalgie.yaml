@@ -1,0 +1,49 @@
+id: emotion-nostalgie-001
+name: "Nostalgie"
+version: 1
+type: emotion
+rarity: common
+cost: 1
+
+stats:
+  attack: 0
+  defense: 0
+  emotion_power: 6
+
+effects:
+  - trigger: on_play
+    action:
+      type: emotion_boost
+      target: all_memory_cards_in_hand
+      stat: emotion_power
+      amount: 2
+  - trigger: on_play
+    action:
+      type: story_fragment
+      fragment_id: "erinnerung-welle"
+
+media:
+  image: "assets/cards/nostalgie.webp"
+  audio: null
+  video_clip: null
+
+lore:
+  text: >
+    Der Geruch von damals.
+    Die Wärme, die du nicht festhalten konntest.
+    Nostalgie ist Liebe ohne Adresse.
+  chapter: "DIE_VERGANGENE_WELT"
+  emotion_tag: nostalgie
+  unlock_condition: null
+
+ai_tags:
+  - emotion
+  - buff
+  - memory_synergy
+  - story_trigger
+  - low_cost
+
+collectible:
+  obtained_from: starter_deck
+  tradeable: false
+  flavor_quote: "Man wird nie wissen, wann das letzte Mal das letzte Mal war."

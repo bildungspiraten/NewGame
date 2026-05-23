@@ -1,0 +1,53 @@
+id: decision-bleib-oder-geh-001
+name: "Bleib oder geh?"
+version: 1
+type: decision
+rarity: rare
+cost: 3
+
+stats:
+  attack: 0
+  defense: 0
+  emotion_power: 8
+
+effects:
+  - trigger: on_play
+    action:
+      type: branching_event
+      ink_file: "story/decisions/bleib-oder-geh.ink"
+      choices:
+        - label: "Bleiben"
+          effect:
+            type: heal
+            target: self
+            amount: 5
+        - label: "Gehen"
+          effect:
+            type: draw
+            count: 3
+
+media:
+  image: "assets/cards/entscheidung.webp"
+  audio: null
+  video_clip: null
+
+lore:
+  text: >
+    Manchmal ist die wichtigste Frage nicht,
+    was du tust, sondern ob du es tust.
+    Beide Wege führen irgendwohin.
+  chapter: "DER_SCHEIDEWEG"
+  emotion_tag: ungewissheit
+  unlock_condition: "match.won.count >= 1"
+
+ai_tags:
+  - decision
+  - branching
+  - high_value
+  - story_core
+  - choice_mechanic
+
+collectible:
+  obtained_from: story_reward
+  tradeable: false
+  flavor_quote: "Jede Entscheidung tötet tausend andere Möglichkeiten."
