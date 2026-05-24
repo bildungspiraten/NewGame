@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0d0d1a">
+  <meta name="description" content="CARDVERSE Beziehungshybrid – eine private, statische Mobile-App für Reflexion und Nähe.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CARDVERSE">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <title>CARDVERSE</title>
+</head>
+<body>
+
+<div id="app-shell">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <header id="top-bar">
+    <span id="top-bar-title">CARDVERSE</span>
+    <button id="btn-pause" aria-label="Pause">Pause</button>
+  </header>
+
+  <!-- ── Stage (main content) ───────────────────────────────────────────── -->
+  <main id="stage">
+
+    <!-- Consent Screen -->
+    <section id="screen-consent" class="screen" hidden>
+      <div class="consent-logo">✦</div>
+      <h1 class="consent-title">CARDVERSE</h1>
+      <p class="consent-subtitle">Beziehungshybrid</p>
+      <p id="consent-text"></p>
+      <button class="btn btn--primary btn--full" id="btn-consent-accept">
+        Verstanden – App starten
+      </button>
+    </section>
+
+    <!-- Home / Aktuelle Stage -->
+    <section id="screen-home" class="screen" hidden>
+      <div class="home-bg" id="home-bg"></div>
+      <div class="home-content">
+        <p class="home-chapter-badge" id="home-chapter-num"></p>
+        <h2 class="home-stage-title" id="home-stage-title"></h2>
+        <p class="home-stage-subtitle" id="home-stage-subtitle"></p>
+        <blockquote class="home-intro" id="home-intro-text"></blockquote>
+        <p class="home-nodes-title">Stationen dieses Kapitels</p>
+        <div id="home-node-list"></div>
+        <button class="btn btn--primary btn--full" id="btn-advance">
+          Nächstes Kapitel →
+        </button>
+      </div>
+    </section>
+
+    <!-- Einzelner Knoten / Interaktion -->
+    <section id="screen-node" class="screen" hidden>
+      <div class="node-header">
+        <button id="node-back-btn" aria-label="Zurück">←</button>
+        <h2 id="node-title"></h2>
+      </div>
+      <div id="node-content"></div>
+    </section>
+
+    <!-- Karten -->
+    <section id="screen-cards" class="screen" hidden>
+      <h2 class="screen-heading">Deine Karten</h2>
+      <div id="cards-container"></div>
+    </section>
+
+    <!-- Map -->
+    <section id="screen-map" class="screen" hidden>
+      <h2 class="screen-heading" style="padding:16px 16px 0">Dein Werdegang</h2>
+      <div id="map-container"></div>
+    </section>
+
+    <!-- Statistiken -->
+    <section id="screen-stats" class="screen" hidden>
+      <div id="stats-container"></div>
+    </section>
+
+    <!-- Endgame -->
+    <section id="screen-endgame" class="screen" hidden>
+      <h2 id="endgame-title" class="screen-heading" style="text-align:center"></h2>
+      <p id="endgame-subtitle" style="text-align:center;color:var(--text-secondary);margin-bottom:24px"></p>
+      <div class="endgame-tier" id="endgame-tier"></div>
+      <p class="endgame-desc" id="endgame-desc"></p>
+      <div class="endgame-cards" id="endgame-cards"></div>
+      <button class="btn btn--secondary btn--full" onclick="location.reload()">
+        Von vorn beginnen
+      </button>
+    </section>
+
+  </main>
+
+  <!-- ── Bottom Navigation ───────────────────────────────────────────────── -->
+  <nav id="bottom-nav">
+    <button class="bottom-nav-btn" id="nav-home">
+      <span class="nav-icon">⌂</span>
+      Kapitel
+    </button>
+    <button class="bottom-nav-btn" id="nav-map">
+      <span class="nav-icon">◎</span>
+      Karte
+    </button>
+    <button class="bottom-nav-btn" id="nav-cards">
+      <span class="nav-icon">✦</span>
+      Karten
+    </button>
+    <button class="bottom-nav-btn" id="nav-stats">
+      <span class="nav-icon">≈</span>
+      Verlauf
+    </button>
+  </nav>
+
+  <!-- ── LOVE Button ─────────────────────────────────────────────────────── -->
+  <button id="love-button" aria-label="LOVE – Pause und Fürsorge">♥</button>
+
+</div><!-- #app-shell -->
+
+<!-- ── Video Landscape Overlay ─────────────────────────────────────────────── -->
+<div id="video-overlay" hidden>
+  <p class="video-overlay-hint">Drehe dein Handy für beste Ansicht</p>
+  <iframe
+    id="overlay-iframe"
+    src=""
+    allow="autoplay; fullscreen"
+    allowfullscreen
+    frameborder="0"
+    oncontextmenu="return false"
+    title="Video Vollansicht"
+  ></iframe>
+  <div class="video-overlay-controls">
+    <button class="btn btn--icon" id="btn-overlay-fullscreen">Vollbild ⤢</button>
+    <button class="btn btn--icon" id="btn-overlay-close">Schließen ✕</button>
+  </div>
+  <!--
+    Hinweis: Der Download von Videos über externe Links (z. B. Google Drive)
+    kann im Browser nicht absolut verhindert werden. controlsList="nodownload"
+    versteckt den Browser-Download-Button, verhindert aber keinen gezielten
+    Zugriff. Dies ist bewusst so dokumentiert.
+  -->
+</div>
+
+<!-- ── LOVE Overlay ─────────────────────────────────────────────────────────── -->
+<div id="love-overlay" class="overlay" hidden>
+  <p id="love-overlay-text"></p>
+  <button class="btn btn--primary" id="btn-love-close">Weiter, wenn du bereit bist</button>
+</div>
+
+<!-- Service Worker Registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+  }
+</script>
+
+<script type="module" src="app.js"></script>
+
+</body>
+</html>

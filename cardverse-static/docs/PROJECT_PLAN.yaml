@@ -1,0 +1,69 @@
+project: CARDVERSE Beziehungshybrid
+version: 1.0.0
+type: static-pwa
+date: 2026-05-24
+
+status:
+  core_app: fertig
+  data_model: fertig
+  card_engine: fertig
+  map_engine: fertig
+  minigames: fertig
+  stats: fertig
+  service_worker: fertig
+  assets: ausstehend
+  video_links: konfigurieren
+  testing: offen
+
+stages:
+  - id: stage_01_prolog
+    title: Prolog
+    status: implementiert
+    nodes: [start, video, decision]
+    reward: emblem_first_step
+
+  - id: stage_02_memory
+    title: Erinnerung
+    status: implementiert
+    nodes: [video, barometer, decision, minigame_sort]
+    reward: emblem_memory
+
+  - id: stage_03_silence
+    title: Stille
+    status: implementiert
+    nodes: [video, barometer, reflection]
+    reward: emblem_silence
+
+  - id: stage_04_conflict
+    title: Konflikt
+    status: implementiert
+    nodes: [video, decision, barometer]
+    reward: emblem_conflict
+
+  - id: stage_05_trust
+    title: Vertrauen
+    status: implementiert
+    nodes: [video, barometer, minigame_assemble]
+    reward: emblem_trust
+
+  - id: stage_06_endgame
+    title: Endgame
+    status: implementiert
+    nodes: [video, reflection]
+    reward: emblem_journey
+
+open_tasks:
+  - Video-Links in data.js eintragen
+  - Assets (Hintergründe, Karten-Rahmen, Embleme, Icons) erstellen und ablegen
+  - PWA auf Handy installieren und golden-path testen
+  - Landscape-Overlay auf iOS Safari prüfen (Fullscreen-API eingeschränkt)
+  - Barometer-History-Ansicht erweitern (aktuell nur Zähler)
+  - Emblem-Export-Funktion mit echten Emblem-Grafiken testen
+
+technical_decisions:
+  - kein Build-Schritt: direkt lauffähig per HTTP-Server
+  - kein Framework: Vanilla JS ES-Module
+  - localStorage: State + Eventlog
+  - IndexedDB: nicht genutzt, kann für große Eventlogs nachgerüstet werden
+  - CSS: custom properties + dvh + safe-area-inset
+  - Videos: extern via iframe (Google Drive /preview)

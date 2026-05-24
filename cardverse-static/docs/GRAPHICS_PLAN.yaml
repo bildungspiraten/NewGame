@@ -1,0 +1,133 @@
+graphics_plan: CARDVERSE Beziehungshybrid
+date: 2026-05-24
+design_language: filmisch, emotional, ruhig, cinematic dark
+
+color_palette:
+  background_dark: "#0d0d1a"
+  background_surface: "#12122a"
+  accent_gold: "#d4a96a"
+  accent_warm: "#c8956c"
+  text_primary: "#e8e0d0"
+  text_secondary: "#8a8090"
+
+backgrounds:
+  - id: bg_start
+    file: assets/backgrounds/bg_start.webp
+    size: 1080x1920
+    used_in: stage_01_prolog
+    mood: warm, dämmerung, neugier
+
+  - id: bg_cards
+    file: assets/backgrounds/bg_cards.webp
+    size: 1080x1920
+    used_in: stage_02 bis stage_05
+    mood: dunkel, ruhig, fokus
+
+  - id: bg_video
+    file: assets/backgrounds/bg_video.webp
+    size: 1080x1920
+    used_in: video-panels (fallback)
+    mood: schwarz, filmisch
+
+  - id: bg_endgame
+    file: assets/backgrounds/bg_endgame.webp
+    size: 1080x1920
+    used_in: stage_06_endgame
+    mood: offen, weit, still
+
+  - id: map_background
+    file: assets/backgrounds/map_background.webp
+    size: 1080x1920
+    used_in: map-screen
+    mood: handgezeichnet, weg, pfad
+
+cards:
+  - id: card_frame_memory
+    file: assets/cards/card_frame_memory.png
+    size: 744x1038
+    thumb: assets/cards/card_thumb_memory.png
+    thumb_size: 240x336
+    accent: "#c8956c"
+
+  - id: card_frame_trust
+    file: assets/cards/card_frame_trust.png
+    size: 744x1038
+    thumb: assets/cards/card_thumb_trust.png
+    thumb_size: 240x336
+    accent: "#6c9eb4"
+
+  - id: card_frame_courage
+    file: assets/cards/card_frame_courage.png
+    size: 744x1038
+    thumb: assets/cards/card_thumb_courage.png
+    thumb_size: 240x336
+    accent: "#c86c6c"
+
+  - id: card_frame_closeness
+    file: assets/cards/card_frame_closeness.png
+    size: 744x1038
+    thumb: assets/cards/card_thumb_closeness.png
+    thumb_size: 240x336
+    accent: "#8cb46c"
+
+  - id: card_frame_new_beginning
+    file: assets/cards/card_frame_new_beginning.png
+    size: 744x1038
+    thumb: assets/cards/card_thumb_new_beginning.png
+    thumb_size: 240x336
+    accent: "#a06cc8"
+
+emblems:
+  - id: emblem_first_step
+    file: assets/emblems/emblem_first_step.png
+    export: assets/emblems/emblem_first_step_export.png
+    thumb: assets/emblems/emblem_first_step_thumb.png
+    sizes: [512x512, 1024x1024, 128x128]
+
+  - id: emblem_memory
+    file: assets/emblems/emblem_memory.png
+    sizes: [512x512, 1024x1024, 128x128]
+
+  - id: emblem_silence
+    file: assets/emblems/emblem_silence.png
+    sizes: [512x512, 1024x1024, 128x128]
+
+  - id: emblem_conflict
+    file: assets/emblems/emblem_conflict.png
+    sizes: [512x512, 1024x1024, 128x128]
+
+  - id: emblem_trust
+    file: assets/emblems/emblem_trust.png
+    sizes: [512x512, 1024x1024, 128x128]
+
+  - id: emblem_journey
+    file: assets/emblems/emblem_journey.png
+    sizes: [512x512, 1024x1024, 128x128]
+
+icons:
+  - file: assets/icons/icon-192.png
+    size: 192x192
+    use: PWA manifest + apple-touch-icon
+
+  - file: assets/icons/icon-512.png
+    size: 512x512
+    use: PWA manifest
+
+ui_elements:
+  - file: assets/ui/love_button.svg
+    description: Herz-Icon für LOVE-Button
+  - file: assets/ui/pause_button.svg
+    description: Pause-Symbol
+  - file: assets/ui/lock_icon.svg
+    description: Schloss für gesperrte Knoten
+  - file: assets/ui/barometer_track.svg
+    description: Hintergrund-Track für Slider
+
+design_notes:
+  - keine Casino-Optik, keine blinkenden Effekte
+  - Karten haben leichten Glanzeffekt (CSS box-shadow reicht zunächst)
+  - Map wirkt wie ein handgezeichneter Weg, nicht wie ein Tech-Flowchart
+  - Hintergründe dienen als stimmungsgebender Untergrund, nicht als Ablenkung
+  - Opacity der Hintergründe: 15–25% (in CSS gesetzt)
+  - Farb-Akzente: warmes Gold (#d4a96a) als Hauptakzent
+  - Typografie: Serif-Font für emotionale Wirkung
