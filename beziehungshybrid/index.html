@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f0f1a">
+  <title>Beziehungshybrid ❤️</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+
+  <!-- ─── Header ─────────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-top">
+      <h1>❤️ Beziehungshybrid</h1>
+      <div class="player-badge">
+        👤 <span id="player-badge-name">Spieler 1</span>
+      </div>
+    </div>
+    <nav class="nav" role="navigation" aria-label="Spielbereiche">
+      <button class="nav-btn active" data-section="start"
+              onclick="showSection('start')">🏠 Start</button>
+      <button class="nav-btn" data-section="regeln"
+              onclick="showSection('regeln')">📋 Regeln</button>
+      <button class="nav-btn" data-section="prolog"
+              onclick="showSection('prolog')">🌙 Prolog</button>
+      <button class="nav-btn" data-section="erinnerungen"
+              onclick="showSection('erinnerungen')">📜 Erinnerungen</button>
+      <button class="nav-btn" data-section="zukunft"
+              onclick="showSection('zukunft')">✨ Zukunft</button>
+      <button class="nav-btn" data-section="konflikte"
+              onclick="showSection('konflikte')">⚡ Konflikte</button>
+      <button class="nav-btn" data-section="vertrauen"
+              onclick="showSection('vertrauen')">🛡️ Vertrauen</button>
+      <button class="nav-btn" data-section="traeume"
+              onclick="showSection('traeume')">🌌 Träume</button>
+      <button class="nav-btn" data-section="kommunikation"
+              onclick="showSection('kommunikation')">💬 Kommunikation</button>
+      <button class="nav-btn" data-section="ende"
+              onclick="showEnde()">🏆 Ende</button>
+    </nav>
+    <div class="progress-wrap">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+  </header>
+
+  <!-- ─── LOVE-Button ───────────────────────────────────────────────────── -->
+  <button class="love-btn" onclick="loveBtnClicked()" aria-label="LOVE Button">❤️</button>
+
+  <!-- ─── Toast ─────────────────────────────────────────────────────────── -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- ─── Haupt-Inhalt ──────────────────────────────────────────────────── -->
+  <main class="main" role="main">
+
+    <!-- START ──────────────────────────────────────────────────────────── -->
+    <section class="section active" id="sec-start" aria-label="Startseite">
+      <div class="start-hero">
+        <span class="hero-emoji">💑</span>
+        <h2>Willkommen</h2>
+        <p>Eine Reise für zwei — durch Erinnerungen, Träume und alles dazwischen.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Wer spielt mit?</div>
+        <p class="card-subtitle">Gebt eure Namen ein — oder lasst die Platzhalter stehen.</p>
+        <div class="name-inputs">
+          <div class="name-input-group">
+            <label for="input-name1">Spieler 1</label>
+            <input class="name-input" id="input-name1"
+                   type="text" placeholder="Dein Name" maxlength="20"
+                   autocomplete="off" autocorrect="off">
+          </div>
+          <div class="name-input-group">
+            <label for="input-name2">Spieler 2</label>
+            <input class="name-input" id="input-name2"
+                   type="text" placeholder="Ihr Name" maxlength="20"
+                   autocomplete="off" autocorrect="off">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="startGame()">
+          🚀 Reise beginnen
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Was erwartet euch?</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+          <div style="display:flex;gap:12px;align-items:center">
+            <span style="font-size:24px">🌙</span>
+            <div>
+              <strong>7 Etagen</strong>
+              <div class="text-muted">Prolog → Erinnerungen → Zukunft → Konflikte → Vertrauen → Träume → Ende</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <span style="font-size:24px">❓</span>
+            <div>
+              <strong>30+ Fragen</strong>
+              <div class="text-muted">Ehrlich, emotional, überraschend</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <span style="font-size:24px">🎲</span>
+            <div>
+              <strong>Zufallsevents</strong>
+              <div class="text-muted">Momente, die ihr nicht erwartet</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <span style="font-size:24px">❤️</span>
+            <div>
+              <strong>LOVE-Button</strong>
+              <div class="text-muted">Immer da — für Pausen und Neuanfänge</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REGELN ─────────────────────────────────────────────────────────── -->
+    <section class="section" id="sec-regeln" aria-label="Spielregeln">
+      <div class="card">
+        <div class="card-title">📋 Die Regeln</div>
+        <p class="card-subtitle">Lest sie gemeinsam durch, bevor es losgeht.</p>
+        <ul class="regeln-list" id="regeln-list"></ul>
+      </div>
+      <button class="btn btn-primary" onclick="showSection('prolog')">
+        Los geht's! ➜
+      </button>
+    </section>
+
+    <!-- PROLOG ─────────────────────────────────────────────────────────── -->
+    <section class="section" id="sec-prolog" aria-label="Prolog"></section>
+
+    <!-- ERINNERUNGEN ───────────────────────────────────────────────────── -->
+    <section class="section" id="sec-erinnerungen" aria-label="Kapitel Erinnerungen"></section>
+
+    <!-- ZUKUNFT ────────────────────────────────────────────────────────── -->
+    <section class="section" id="sec-zukunft" aria-label="Kapitel Zukunft"></section>
+
+    <!-- KONFLIKTE ──────────────────────────────────────────────────────── -->
+    <section class="section" id="sec-konflikte" aria-label="Kapitel Konflikte"></section>
+
+    <!-- VERTRAUEN ──────────────────────────────────────────────────────── -->
+    <section class="section" id="sec-vertrauen" aria-label="Kapitel Vertrauen"></section>
+
+    <!-- TRÄUME ─────────────────────────────────────────────────────────── -->
+    <section class="section" id="sec-traeume" aria-label="Kapitel Träume"></section>
+
+    <!-- KOMMUNIKATION ──────────────────────────────────────────────────── -->
+    <section class="section" id="sec-kommunikation" aria-label="Einheit Kommunikation"></section>
+
+    <!-- ENDE ───────────────────────────────────────────────────────────── -->
+    <section class="section" id="sec-ende" aria-label="Abschluss"></section>
+
+  </main>
+
+  <!-- ─── Zufallsevent-Overlay ──────────────────────────────────────────── -->
+  <div class="event-overlay" id="event-overlay" role="dialog" aria-modal="true">
+    <div class="event-card">
+      <div class="event-icon" id="event-icon">🎲</div>
+      <h3 id="event-name">Zufallsevent</h3>
+      <p id="event-text">Ein besonderer Moment wartet auf euch.</p>
+      <div class="event-auswirkung" id="event-auswirkung">✨</div>
+      <button class="btn btn-primary" onclick="closeEvent()">
+        ✅ Verstanden!
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── LOVE-Overlay ──────────────────────────────────────────────────── -->
+  <div class="love-overlay" id="love-overlay" role="dialog" aria-modal="true">
+    <div class="love-icon">❤️</div>
+    <h2>Ich bin da.</h2>
+    <p>Egal was gerade passiert — ihr habt euch. Das ist das Wichtigste.</p>
+    <button class="btn btn-primary" style="max-width:280px"
+            onclick="closeLove('pause')">
+      ⏸️ Kurze Pause
+    </button>
+    <button class="btn btn-ghost mt-12" style="max-width:280px;color:white;border-color:rgba(255,255,255,0.3)"
+            onclick="closeLove('neustart')">
+      🔄 Neuanfang
+    </button>
+    <button class="btn btn-ghost mt-12" style="max-width:280px;color:white;border-color:rgba(255,255,255,0.3)"
+            onclick="closeLove('close')">
+      ✕ Schließen
+    </button>
+  </div>
+
+  <!-- ─── Scripts ───────────────────────────────────────────────────────── -->
+  <script src="daten.js"></script>
+  <script src="script.js"></script>
+  <script>
+    // Regeln dynamisch befüllen
+    document.addEventListener('DOMContentLoaded', () => {
+      const list = document.getElementById('regeln-list');
+      if (list && GAME_DATA.regeln) {
+        list.innerHTML = GAME_DATA.regeln.map((r, i) => `
+          <li>
+            <span class="regel-num">${i + 1}</span>
+            <span>${r}</span>
+          </li>`).join('');
+      }
+
+      // Player-Badge init
+      const badge = document.querySelector('#player-badge-name');
+      if (badge) badge.id = 'player-badge'; // normalize id
+    });
+  </script>
+</body>
+</html>

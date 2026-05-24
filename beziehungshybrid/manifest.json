@@ -1,0 +1,22 @@
+{
+  "name": "Beziehungshybrid",
+  "short_name": "❤️ Hybrid",
+  "description": "Ein interaktives Beziehungsspiel für zwei",
+  "start_url": "/beziehungshybrid/index.html",
+  "display": "standalone",
+  "background_color": "#0f0f1a",
+  "theme_color": "#6e48aa",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
