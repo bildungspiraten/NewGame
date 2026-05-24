@@ -1,0 +1,4533 @@
+================================================================================
+  CARDVERSE & BEZIEHUNGSHYBRID — KOMPLETTES PROJEKT
+  Generiert: 2026-05-24
+  Branch: claude/cardverse-game-portal-research-Ra2HJ
+  Repo: bildungspiraten/NewGame
+================================================================================
+
+INHALTSVERZEICHNIS
+==================
+ [1]  docs/CARDVERSE_ARCHITECTURE.md         — Vollständige Systemarchitektur
+ [2]  docs/AI_MODELS_RESEARCH.md             — KI-Modell-Recherche 2025/2026
+ [3]  data/ai/personalities.yaml             — KI-Gegner Persönlichkeiten
+ [4]  data/cards/memory/erster-tag.yaml      — Starter-Karte: Erinnerung
+ [5]  data/cards/memory/kueche-um-drei.yaml  — Starter-Karte: Ort
+ [6]  data/cards/emotions/nostalgie.yaml     — Starter-Karte: Emotion
+ [7]  data/cards/emotions/entscheidung.yaml  — Starter-Karte: Entscheidung
+ [8]  data/cards/legendary/sommernacht.yaml  — Starter-Karte: Legendary
+ [9]  data/story/chapters/anfang.ink         — inkjs Story Kapitel 1
+[10]  docker-compose.yml                     — PocketBase + Server Stack
+[11]  beziehungshybrid/daten.js              — Spieldaten (7 Hybridamen, 30+ Fragen)
+[12]  beziehungshybrid/index.html            — Haupt-HTML (PWA)
+[13]  beziehungshybrid/styles.css            — Dark-Mode, Touch-Styles
+[14]  beziehungshybrid/script.js             — Spiellogik (2-Spieler, Events)
+[15]  beziehungshybrid/service-worker.js     — Offline-Cache
+[16]  beziehungshybrid/manifest.json         — PWA-Manifest
+[17]  src/server/SocketManager.ts            — Basis-WebSocket-Manager
+[18]  src/server/server.ts                   — Express-Server
+[19]  src/server/wss.ts                      — WebSocket-Server
+[20]  src/shared/messages.ts                 — Message-Types
+[21]  package.json                           — Dependencies
+
+================================================================================
+SCHNELLSTART — BEZIEHUNGSHYBRID
+================================================================================
+1. cd beziehungshybrid
+2. python3 -m http.server 8080
+3. http://localhost:8080 im Handy-Browser öffnen
+4. Namen eingeben → Reise beginnen!
+   Videos in beziehungshybrid/videos/ ablegen (prolog.mp4, erinnerungen.mp4 usw.)
+   Platzhalter in daten.js anpassen (config-Block oben)
+
+================================================================================
+SCHNELLSTART — CARDVERSE (KARTENSPIEL-ENTWICKLUNG)
+================================================================================
+1. npm install colyseus colyseus.js @colyseus/schema js-yaml
+2. Karten-YAMLs in data/cards/ bearbeiten
+3. docker-compose up -d  (PocketBase Backend)
+4. Tech-Stack: Phaser 3 + React + Colyseus + PocketBase + OpenRouter
+
+================================================================================
+
+
+================================================================================
+DATEI: docs/CARDVERSE_ARCHITECTURE.md
+================================================================================
+
+# CARDVERSE — Modulares KI-gestütztes Kartenspiel & Kommunikationsportal
+## Deep Research Architekturdokument
+### ID: MT-BIZEPS-CARDVERSE-001 | Version 1.0 | 2026-05-23
+
+> **Status**: Forschungsphase abgeschlossen. Basis-Repo: `/home/user/NewGame` (Snake-TypeScript-Basis).
+> **Branch**: `claude/cardverse-game-portal-research-Ra2HJ`
+
+---
+
+## 0. Vision & Kernidee
+
+**CARDVERSE** ist ein emotionales, modular erweiterbares Browser-Universum:
+
+```
+leichtes TCG  +  Storyportal  +  Filmwelt  +  Multiplayer  +  Erinnerungsarchiv  +  digitales Wohnzimmer
+```
+
+**Kern-Metapher**: Karten ersetzen Chats. Matches erzeugen Erinnerungen.
+Erinnerungen werden sammelbar. Das Spiel ist die Kommunikation.
+
+**Marktlücke** (recherchiert 2025-2026): Es gibt kein einziges Open-Source-Projekt,
+das browser-basiertes Multiplayer-Kartenspiel + persistentes Kommunikationsportal +
+echte LLM-Integration in der Spiellogik kombiniert. Das ist die Opportunität.
+
+---
+
+## 1. Systemarchitektur — Gesamtübersicht
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          CARDVERSE UNIVERSE                             │
+│                                                                         │
+│  ┌───────────────┐   ┌──────────────┐   ┌────────────────────────┐    │
+│  │  CARDGAME     │   │  WOHNZIMMER  │   │  KOMMUNIKATIONSPORTAL  │    │
+│  │  ENGINE       │   │  HUB         │   │                        │    │
+│  │  (Phaser.js)  │   │  (React)     │   │  • Filmplakate (TMDB)  │    │
+│  │               │   │              │   │  • Story-Timeline      │    │
+│  │  • Matches    │◄──►  • Lobby    │   │  • Erinnerungen        │    │
+│  │  • Decks      │   │  • Chat-Room │   │  • Video-Szenen        │    │
+│  │  • Replays    │   │  • Trophäen  │◄──►  • Audio-Karten       │    │
+│  │  • AI-Gegner  │   │  • Zustand   │   │  • Ink/inkjs Stories   │    │
+│  └──────┬────────┘   └──────┬───────┘   └────────────────────────┘    │
+│         │                   │                                           │
+│         ▼                   ▼                                           │
+│  ┌──────────────────────────────────────────────────────┐             │
+│  │            EVENT BUS / APPEND-ONLY LOG               │             │
+│  │    (JSONL Events → SQLite / PocketBase SSE)          │             │
+│  └──────────────────────────────────────────────────────┘             │
+│         │                   │                                           │
+│         ▼                   ▼                                           │
+│  ┌──────────────┐   ┌──────────────┐   ┌────────────────┐            │
+│  │  AI-WORKER   │   │  MEDIA HUB   │   │  STORY ENGINE  │            │
+│  │              │   │              │   │  (inkjs)       │            │
+│  │  OpenRouter  │   │  TMDB API    │   │                │            │
+│  │  + Ollama    │   │  lite-yt-    │   │  • Kapitel     │            │
+│  │  Fallback    │   │  embed       │   │  • Entscheid.  │            │
+│  └──────────────┘   └──────────────┘   └────────────────┘            │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 2. Empfohlener Tech-Stack (recherchiert & validiert)
+
+### 2.1 Finaler Stack — Begründet
+
+| Schicht | Technologie | Begründung |
+|---------|------------|------------|
+| **Spielfeld-Rendering** | **Phaser 3 + Vite + TypeScript** | Bestes Browser-Game-Ecosystem 2025, offizielle Templates |
+| **UI-Shell** | **React 19** (Hybrid mit Phaser) | Offiziell unterstütztes Muster (phaserjs/template-react-ts) |
+| **Lobby/Portal** | **HTMX** für statische Teile | Null Framework-Overhead, kein JS-Bundle |
+| **Multiplayer-Kern** | **Colyseus.io** (Self-Host) | Perfekt für Turn-Based Games, Secret State, Delta-Sync |
+| **Backend/Auth/DB** | **PocketBase** (Go Binary) | 1 Datei, 0 Overhead, SSE-Realtime, Auth, Files |
+| **Spielzustand-Log** | **SQLite Event-Tabelle (JSONL)** | Append-Only, Replay, Debugging |
+| **Narrativ-Engine** | **inkjs** | AAA-Qualität, Browser-nativ, kein Server |
+| **KI-Integration** | **OpenRouter + Ollama Fallback** | Kostenlos/günstig, lokaler Offline-Modus |
+| **Film-Poster** | **TMDB API** | Kostenlos, hochauflösend |
+| **Trailer-Player** | **lite-youtube-embed** | Lazy Load, kein iFrame-Overhead |
+| **Foto-Archiv** | **Immich** (Self-Host) | 90k GitHub Stars, Alben, API |
+| **Hosting** | **Hetzner CX22 + Docker Compose** | 5 €/Monat, 100 gleichzeitige Nutzer |
+| **CDN/SSL** | **Cloudflare Free** | DDoS-Schutz, R2 für Karten-Assets |
+
+**Monatliche Gesamtkosten MVP**: ~5–10 € / Monat
+
+### 2.2 Hybride Projektstruktur
+
+```
+cardverse/
+├── apps/
+│   ├── client/                    ← Vite + Phaser 3 + React + TypeScript
+│   │   ├── src/
+│   │   │   ├── scenes/            ← Phaser Scenes (GameScene, LobbyScene)
+│   │   │   ├── components/        ← React UI (HUD, Chat, Settings, Poster)
+│   │   │   ├── network/           ← Colyseus Client
+│   │   │   ├── story/             ← inkjs Story Player
+│   │   │   └── main.tsx
+│   │   └── vite.config.ts
+│   │
+│   └── server/                    ← Colyseus + Hono + Node.js/Bun
+│       ├── rooms/
+│       │   └── CardGameRoom.ts    ← Colyseus Room
+│       ├── ai/
+│       │   └── ai-worker.ts       ← OpenRouter/Ollama Adapter
+│       └── index.ts
+│
+├── data/
+│   ├── cards/                     ← YAML Karten-Definitionen
+│   │   ├── memory/
+│   │   ├── places/
+│   │   ├── emotions/
+│   │   └── legendary/
+│   ├── story/                     ← inkjs / .ink Story-Files
+│   │   ├── chapters/
+│   │   └── events/
+│   └── events/                    ← Story-Event-YAMLs
+│
+├── docs/
+│   └── CARDVERSE_ARCHITECTURE.md  ← Diese Datei
+│
+└── docker-compose.yml             ← PocketBase + Colyseus + Nginx
+```
+
+---
+
+## 3. Spieldesign — Kardenmechanik
+
+### 3.1 Hybride Spielschleife
+
+```
+VORBEREITUNG
+  ↓
+[Wohnzimmer-Hub / Lobby]
+  • Deck bauen (20-30 Karten aus YAML-Definitionen)
+  • Status anzeigen (Erinnerungen, Trophäen, Story-Stand)
+  • Filmplakat-Wand (via TMDB API)
+  ↓
+MATCH-PHASE (Turn-Based, Colyseus Room)
+  ├─ Mana-System (1-10 pro Runde)
+  ├─ Karten ziehen (5 zu Beginn)
+  ├─ Karte spielen = Aktion + Story-Fragment (inkjs)
+  ├─ KI-Gegner (OpenRouter) oder echter Spieler (P2P via Colyseus)
+  └─ Legendary Events: Trailer startet (lite-youtube-embed)
+  ↓
+ABSCHLUSS
+  ├─ Gewinner bekommt seltene Karte oder Erinnerung
+  ├─ Story-Kapitel wird freigeschaltet (inkjs)
+  ├─ Replay als JSONL gespeichert (SQLite)
+  └─ Erinnerung erscheint im Archiv (Immich-API oder lokal)
+  ↓
+[RÜCKKEHR ins Wohnzimmer]
+  • Neue Karte erscheint in Sammlung
+  • Story-Fragment wird abgespielt
+  • Trophäe erscheint im Regal
+```
+
+### 3.2 Karten-Typen
+
+| Typ | Funktion | Beispiel |
+|-----|---------|---------|
+| **memory** | Story-Fragment + Emotionspunkte | "Erster Kaffee in Berlin" |
+| **place** | Terrain/Bonus-Effekt | "Küche um 3 Uhr nachts" |
+| **person** | NPC / Verstärker | "Der Freund der immer da ist" |
+| **emotion** | Zustandsmodifikator | "Nostalgie +3" |
+| **decision** | Branching-Event (inkjs) | "Bleib oder geh?" |
+| **filmscene** | Spezialfähigkeit + Video-Clip (TMDB) | "Kulminationsmoment" |
+| **song** | Buff + Audio-Overlay | "Das Lied vom Sommer" |
+| **legendary** | Seltener Match-Wendepunkt + Trailer | "Neue Ära" |
+
+### 3.3 Light-Monopoly-Element (Phase 2)
+
+```
+[WELTENKARTE]
+  • Hexfelder = Orte (Berlin, Küche, Kino, Strand...)
+  • Spieler bewegen sich durch Karten-Aktionen
+  • Orte freischalten = neue Kartensets (YAML-Packs)
+  • Events auf Orten = Mini-Matches (Colyseus Rooms)
+  • Ressourcen: Emotionspunkte, Erinnerungsscherben, Story-Tokens
+```
+
+### 3.4 Existierende Inspirationsprojekte (recherchiert)
+
+| Projekt | Relevanz | URL |
+|---------|---------|-----|
+| **boardgame.io** | Spiellogik-Framework, Secret State, Time-Travel | github.com/boardgameio/boardgame.io |
+| **Colyseus Turn-Based Demo** | UNO-Implementierung mit Bot-Spielern | colyseus.io/blog |
+| **Cardiverse (arXiv)** | LLM-gesteuerte Kartenspiel-Generierung | arxiv.org/abs/2502.07128 |
+| **Inscryption JSONLoader** | YAML/JSON-basiertes Karten-Modsystem | github.com/MADH95/JSONLoader |
+| **GameMasterAI** | GPT-4 als Dungeon Master, Web-App | github.com/deckofdmthings/GameMasterAI |
+| **hearthstone-os** | Open-Source Hearthstone-Klon | github.com/kvfrans/hearthstone-os |
+| **Arcmage** | Freies TCG, CC-Karten | arcmage.org |
+
+---
+
+## 4. YAML-Karten-Schema (vollständig)
+
+### 4.1 Basis-Karten-Schema
+
+```yaml
+# cards/memory/erster-kaffee-berlin.yaml
+id: memory-berlin-2024-001
+name: "Erster Kaffee in Berlin"
+version: 1
+type: memory          # memory | place | person | emotion | decision | filmscene | song | legendary
+rarity: uncommon      # common | uncommon | rare | epic | legendary
+cost: 2               # Mana-Kosten (1-10)
+
+stats:
+  attack: 0
+  defense: 3
+  emotion_power: 5
+
+effects:
+  - trigger: on_play
+    action:
+      type: heal
+      target: self
+      amount: 2
+  - trigger: on_play
+    action:
+      type: draw
+      count: 1
+  - trigger: on_play
+    action:
+      type: story_fragment
+      fragment_id: "berlin-chapter-1"     # → inkjs Story
+
+media:
+  image: "assets/cards/erster-kaffee-berlin.webp"
+  audio: null
+  video_clip: null
+  tmdb_id: null                           # für Filmkarten
+
+lore:
+  text: >
+    Der Moment, als alles noch möglich war.
+    Der erste Schluck. Der erste Blick. Die erste Stadt.
+  chapter: "DER_ANFANG"
+  emotion_tag: nostalgie
+  unlock_condition: "match.won.count >= 3"
+
+ai_tags:                                  # Für LLM-Kartenverständnis
+  - memory
+  - defensive
+  - story_trigger
+  - low_cost
+
+collectible:
+  obtained_from: story_reward             # story_reward | match_reward | shop | event
+  tradeable: false
+  flavor_quote: "Es riecht immer noch nach damals."
+```
+
+### 4.2 Filmkarte (TMDB-Integration)
+
+```yaml
+# cards/legendary/berlin-film-2024.yaml
+id: film-tmdb-12345
+name: "Der Berliner Sommer"
+version: 1
+type: filmscene
+rarity: legendary
+cost: 7
+
+stats:
+  attack: 5
+  defense: 5
+  emotion_power: 10
+
+effects:
+  - trigger: on_play
+    action:
+      type: legendary_event
+      event_id: "trailer-berlin-sommer"
+  - trigger: on_play
+    action:
+      type: deal_damage
+      target: all_enemies
+      amount: 5
+
+media:
+  tmdb_id: 12345                          # → TMDB API holt Poster + Trailer
+  tmdb_trailer_key: "dQw4w9WgXcQ"        # YouTube Key für lite-youtube-embed
+  image: null                             # wird automatisch von TMDB geholt
+
+lore:
+  text: "Der Film, der alles zusammenbrachte."
+  chapter: "KLIMAX"
+  emotion_tag: euphorie
+```
+
+### 4.3 Story-Event-Schema (inkjs-kompatibel)
+
+```yaml
+# story/events/berlin-chapter-1.yaml
+id: "berlin-chapter-1"
+title: "Ankunft"
+chapter: "DER_ANFANG"
+ink_file: "story/chapters/anfang.ink"    # → inkjs lädt .ink-Datei
+
+triggers:
+  - condition: "card.played == memory-berlin-2024-001"
+
+rewards:
+  story_unlocks: ["berlin-chapter-2"]
+  emotion_tokens: 3
+  cards: []
+```
+
+```ink
+// story/chapters/anfang.ink (inkjs-Format)
+Du spielst die Karte. Eine Sekunde lang riecht es nach frischem Kaffee
+und nassem Pflasterstein.
+
+* [Erinnern]
+    Das war der Moment, der alles geändert hat. +2 Emotionspunkte.
+    -> berlin_chapter_2_start
+
+* [Weitermachen]
+    Du schüttelst den Kopf. Jetzt ist nicht die Zeit.
+    -> match_continues
+
+=== berlin_chapter_2_start ===
+Ein neues Kapitel beginnt...
+-> END
+```
+
+### 4.4 Match-Event-Log (JSONL Append-Only)
+
+```jsonl
+{"ts":"2026-05-23T20:00:00Z","type":"match.started","v":1,"matchId":"m-abc123","mode":"pvp","players":[{"id":"p1","deck":"nostalgie-deck"},{"id":"p2","type":"ai","personality":"nostalgiker"}]}
+{"ts":"2026-05-23T20:00:10Z","type":"turn.started","matchId":"m-abc123","turn":1,"activePlayer":"p1","mana":1}
+{"ts":"2026-05-23T20:00:45Z","type":"card.played","matchId":"m-abc123","player":"p1","card":"memory-berlin-2024-001","target":null}
+{"ts":"2026-05-23T20:00:46Z","type":"story.triggered","matchId":"m-abc123","fragmentId":"berlin-chapter-1","ink_node":"anfang"}
+{"ts":"2026-05-23T20:01:30Z","type":"turn.ended","matchId":"m-abc123","turn":1,"state":{"p1_hp":25,"p2_hp":30}}
+{"ts":"2026-05-23T20:10:00Z","type":"match.ended","matchId":"m-abc123","winner":"p1","reward":{"card":"memory-berlin-2024-001-foil","emotion_tokens":5}}
+```
+
+---
+
+## 5. Multiplayer-Architektur (Colyseus)
+
+### 5.1 Colyseus Room — TypeScript
+
+```typescript
+// server/rooms/CardGameRoom.ts
+import { Room, Client } from "colyseus";
+import { Schema, type, MapSchema } from "@colyseus/schema";
+
+class Card extends Schema {
+  @type("string") id: string = "";
+  @type("string") name: string = "";
+  @type("number") cost: number = 0;
+}
+
+class PlayerState extends Schema {
+  @type("number") hp: number = 30;
+  @type("number") mana: number = 0;
+  @type({ map: Card }) hand = new MapSchema<Card>(); // NUR dieser Spieler sieht seine Hand
+}
+
+class CardGameState extends Schema {
+  @type("string") currentTurn: string = "";
+  @type("number") turnNumber: number = 0;
+  @type({ map: PlayerState }) players = new MapSchema<PlayerState>();
+}
+
+export class CardGameRoom extends Room<CardGameState> {
+  maxClients = 2;
+
+  onCreate() {
+    this.setState(new CardGameState());
+    this.onMessage("play_card", (client, data) => {
+      this.handlePlayCard(client.sessionId, data.cardId, data.target);
+    });
+  }
+
+  onJoin(client: Client) {
+    const player = new PlayerState();
+    this.state.players.set(client.sessionId, player);
+    this.dealStartingHand(client.sessionId);
+  }
+
+  private handlePlayCard(playerId: string, cardId: string, target: string | null) {
+    // Server ist autoritativ — validiert, wendet Effekt an, broadcastet
+    const event = { type: "card.played", player: playerId, card: cardId, ts: new Date().toISOString() };
+    this.appendToLog(event);
+    this.broadcast("state_update", this.state);
+  }
+  
+  private appendToLog(event: object) {
+    // Append-Only SQLite Event Log
+    // db.prepare('INSERT INTO game_events VALUES (?, ?, ?)').run(matchId, JSON.stringify(event), new Date().toISOString())
+  }
+}
+```
+
+### 5.2 Matchmaking-Strategie
+
+```
+MVP: Lobby mit Einladungs-Code
+  → Spieler erstellt Raum (Colyseus Room)
+  → Teilt 6-stelligen Code
+  → Gegner gibt Code ein → beitreten
+  → KI-Gegner als Fallback (sofort verfügbar)
+
+Phase 2: Async-Modus
+  → Match läuft über Stunden/Tage
+  → PocketBase speichert Spielstand
+  → Push-Notification (Browser Push API) bei Gegner-Zug
+  → Match bleibt offen bis beide gezogen haben
+
+Phase 3: ELO-Matchmaking (optional)
+  → Rating-System (Colyseus Lobby)
+  → Automatische Gegnersuche
+  → Regionale Server
+```
+
+### 5.3 Hosting-Optionen
+
+| Option | Kosten | Eignung | Details |
+|--------|--------|---------|---------|
+| **Hetzner CX22** (empfohlen) | 5 €/Monat | MVP + Produktion | Docker Compose, 100 CCU, volle Kontrolle |
+| **Fly.io** | 3-10 $/Monat | Einfaches Deployment | WebSocket-Support, gutes DX |
+| **Railway** | 5 $/Monat Guthaben | Test/Dev | Usage-Based |
+| **Cloudflare Durable Objects** | Gratis+ | Skalierung | Edge-Game-State, WebSocket-nativ |
+| **Colyseus Arena Cloud** | 15 $/Monat | Managed | Kein Server-Aufwand |
+
+---
+
+## 6. KI-Integration
+
+### 6.1 KI-Rollen im System
+
+| Rolle | Aufgabe | Empfohlenes Modell | Kosten |
+|-------|---------|------------------|--------|
+| **Gegner-KI** | Karten-Entscheidungen, Strategie | Qwen-2.5-7B (OpenRouter) | Gratis |
+| **Erzähler** | Story-Fragmente, Atmosphäre | Llama-3.1-8B (Ollama lokal) | Gratis |
+| **NPC-Dialog** | Charakterinteraktionen | Hermes-3-8B (Ollama) | Gratis |
+| **Game Master** | Match-Events, dynamische Regeln | DeepSeek-V3 | $0.01/1M tokens |
+| **Karten-Texte** | Flavor Text, Beschreibungen | Gemma-3-4B | Gratis |
+| **Kommentator** | Live-Match-Kommentar | Qwen-2.5-3B | Gratis |
+
+### 6.2 OpenRouter Empfehlungen (2025/2026)
+
+```
+# Gratis-Modelle (kein API-Schlüssel-Kosten):
+google/gemma-3-4b-it              → NPC-Dialoge, Flavor Text
+meta-llama/llama-3.1-8b-instruct  → Erzähler, Story-Narration
+qwen/qwen-2.5-7b-instruct         → KI-Gegner (schnell, strategisch)
+mistralai/mistral-7b-instruct     → Allgemein
+
+# Günstige bezahlte Modelle:
+deepseek/deepseek-v3              → Game-Master, komplexe Logik ($0.01/1M)
+anthropic/claude-haiku-4-5        → Hochqualität für Schlüsselszenen
+
+# Forschungsergebnis: Qwen-2.5-7B übertrifft GPT-4 in Kartenspiel-Entscheidungen
+# (Quelle: "Language-Driven Play in Slay the Spire", ACM 2024)
+```
+
+### 6.3 Lokale Fallbacks via Ollama
+
+```bash
+# Empfohlene lokale Modelle (8GB RAM):
+ollama pull qwen2.5:7b        # Gegner-KI, schnell (~5 tok/s)
+ollama pull llama3.1:8b       # Erzähler, gute Qualität
+ollama pull hermes3:8b        # NPC-Roleplay-fokussiert
+ollama pull gemma3:4b         # Leicht, für einfache Tasks (4GB RAM)
+```
+
+### 6.4 AI-Worker Architektur
+
+```typescript
+// server/ai/ai-worker.ts
+class AIWorker {
+  async decideCardPlay(gameState: GameState, personality: AIPersonality): Promise<AIAction> {
+    const prompt = this.buildPrompt(gameState, personality);
+    
+    // Primär: OpenRouter (kostenlos)
+    try {
+      return await this.callOpenRouter(prompt);
+    } catch {
+      // Fallback: Lokales Ollama
+      return await this.callOllama(prompt);
+    }
+  }
+
+  private buildPrompt(state: GameState, personality: AIPersonality): string {
+    return `Du bist ${personality.name}, ein ${personality.description} Kartenspieler.
+    
+    Dein Spielstand: HP=${state.my_hp}, Mana=${state.mana}
+    Deine Handkarten: ${state.hand_cards.map(c => `${c.name}(cost:${c.cost})`).join(', ')}
+    Gegner HP: ${state.opponent_hp}
+    
+    Persönlichkeitsstil: ${personality.style}
+    
+    Antworte NUR als JSON: {"action":"play_card|pass","card_id":"...","reasoning":"..."}`;
+  }
+}
+```
+
+### 6.5 KI-Persönlichkeiten
+
+```yaml
+# ai/personalities.yaml
+personalities:
+  - id: nostalgiker
+    name: "Die Erinnerung"
+    description: "emotional, reaktiv, liebt Memory-Karten"
+    style: "Spiele Memory-Karten sobald möglich. Verteidige zuerst. Sei poetisch."
+    model: "qwen/qwen-2.5-7b-instruct"
+
+  - id: stratege
+    name: "Der Planer"
+    description: "rational, langfristig denkend"
+    style: "Baue Combos auf. Warte auf den richtigen Moment. Spare Mana."
+    model: "deepseek/deepseek-v3"
+
+  - id: chaot
+    name: "Der Wilde"
+    description: "unberechenbar, risikofreudig"
+    style: "Spiele zufällig. Überrasche. Gehe Risiken ein."
+    model: "meta-llama/llama-3.1-8b-instruct"
+
+  - id: geschichtenerzaehler
+    name: "Der Erzähler"
+    description: "narrativ-fokussiert, triggert Story-Events"
+    style: "Spiele Karten, die Story-Fragmente auslösen. Priorisiere Lore über Strategie."
+    model: "mistralai/mistral-7b-instruct"
+```
+
+---
+
+## 7. Kommunikationsportal & Digitales Wohnzimmer
+
+### 7.1 Konzept: Karten als Kommunikation
+
+```
+KLASSISCHER CHAT:            CARDVERSE KOMMUNIKATION:
+  "Hey, alles gut?"    →     [Spieler spielt Karte: "Ich denke an dich"]
+  "Ja, und du?"        →     [Gegner antwortet: "Auch. Wollen wir?"]
+  "Gerne!"             →     [Match startet automatisch]
+  [Match läuft]        →     [Jeder Zug = eine Aussage]
+  [Match endet]        →     [Erinnerung entsteht: "Match vom 23. Mai 2026"]
+```
+
+**Inspiration**: Jest (TechCrunch Feb 2026) — 1 Million Spiele in Nachrichten verschickt,
+3-4× bessere Retention als klassische Mobile-Apps. "Sending a game is more personal than sending a message."
+
+### 7.2 Wohnzimmer-Hub Layout
+
+```
+┌────────────────────────────────────────────────────┐
+│                  DEIN WOHNZIMMER                   │
+│                                                    │
+│  [Avatar: Nachdenklich]  Level 7  42 Erinnerungen  │
+│                                                    │
+│  ┌──────────┐  ┌──────────┐  ┌──────────────────┐ │
+│  │ POSTER-  │  │ LETZTE   │  │ NÄCHSTE STORY    │ │
+│  │ WAND     │  │ ERINNG.  │  │ Kapitel 3:       │ │
+│  │ (TMDB)   │  │ 23. Mai  │  │ "Der Abschied"   │ │
+│  └──────────┘  └──────────┘  └──────────────────┘ │
+│                                                    │
+│  [Deck bauen] [Match starten] [Story lesen]        │
+│                                                    │
+│  🏆 Trophäen: 12 Erinnerungen  📺 Trailer: "Neue Ära" │
+│  💬 Letzte Karte von: Freund #1 (gestern 23:42)   │
+└────────────────────────────────────────────────────┘
+```
+
+### 7.3 Filmplakat-Wand (TMDB + lite-youtube-embed)
+
+```typescript
+// client/components/PosterWall.tsx
+import { LiteYoutubeEmbed } from 'lite-youtube-embed';
+
+function FilmCard({ tmdbId }: { tmdbId: number }) {
+  const [movie, setMovie] = useState<TMDBMovie | null>(null);
+
+  useEffect(() => {
+    fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${TMDB_KEY}&language=de`)
+      .then(r => r.json()).then(setMovie);
+  }, [tmdbId]);
+
+  return (
+    <div className="film-card" onClick={() => openTrailer(movie?.trailer_key)}>
+      <img src={`https://image.tmdb.org/t/p/w500${movie?.poster_path}`} />
+      <span>{movie?.title}</span>
+    </div>
+  );
+}
+
+// Trailer als "Legendary Event" im Match:
+// → lite-youtube-embed rendert YouTube ohne Tracking, lazy-loaded
+```
+
+### 7.4 Erinnerungsarchiv (Memory Vault)
+
+```typescript
+// Schema: Memory
+interface Memory {
+  id: string;
+  type: 'card_received' | 'match_won' | 'story_unlocked' | 'place_visited';
+  source_player: string;
+  card_id: string;
+  emotion_tag: string;
+  note?: string;          // freier Text
+  pinned: boolean;
+  created_at: string;
+}
+```
+
+```
+ERINNERUNGEN-TIMELINE:
+  • Inspiriert von: Spacetime (NLW Hackathon, github.com/alexandrecpedro/spacetime)
+  • Sortiert nach Monat/Jahr
+  • Filtert nach: Emotion-Tags, Match-Typ, Karten-Typ
+  • Fotos via: Immich Self-Host API (90k ⭐ github.com/immich-app/immich)
+  • Zeitkapsel-Feature: Erinnerung sperren bis zu Datum (github.com/acm-projects/Time-Capsule)
+```
+
+### 7.5 Narrative Engine (inkjs)
+
+```ink
+// story/chapters/kapitel-3-abschied.ink
+Du stehst am Bahnsteig.
+Der Zug kommt in drei Minuten.
+
+* [Die Karte spielen: "Erinnerung an den Abschied"]
+    Du hältst inne. Die Karte leuchtet kurz auf.
+    "Manche Abschiede sind Anfänge."
+    -> abschied_gluecklich
+
+* [Schweigen]
+    Stille. Der Zug fährt ein.
+    -> abschied_traurig
+
+=== abschied_gluecklich ===
++3 Emotionspunkte. Neue Karte freigeschaltet: "Wiedersehen".
+-> END
+
+=== abschied_traurig ===
++1 Emotionspunkt. Story-Pfad: "Der lange Weg".
+-> END
+```
+
+---
+
+## 8. Datenbank-Schema (SQLite via PocketBase)
+
+```sql
+-- Spieler
+CREATE TABLE players (
+  id TEXT PRIMARY KEY,
+  username TEXT UNIQUE NOT NULL,
+  avatar TEXT,
+  emotion_tokens INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Karten-Sammlung
+CREATE TABLE player_cards (
+  player_id TEXT,
+  card_id TEXT,
+  obtained_at TEXT,
+  times_played INTEGER DEFAULT 0,
+  foil INTEGER DEFAULT 0,        -- seltene Variante
+  PRIMARY KEY (player_id, card_id)
+);
+
+-- Matches
+CREATE TABLE matches (
+  id TEXT PRIMARY KEY,
+  mode TEXT NOT NULL,            -- pvp | pve | async
+  player1_id TEXT NOT NULL,
+  player2_id TEXT,               -- null = AI
+  ai_personality TEXT,           -- nostalgiker | stratege | chaot
+  winner_id TEXT,
+  started_at TEXT,
+  ended_at TEXT,
+  status TEXT DEFAULT 'active'   -- active | completed | abandoned
+);
+
+-- Event Log (APPEND-ONLY — niemals UPDATE/DELETE)
+CREATE TABLE game_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  match_id TEXT NOT NULL,
+  seq INTEGER NOT NULL,
+  event_type TEXT NOT NULL,
+  event_data TEXT NOT NULL,      -- JSON
+  timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Erinnerungsarchiv
+CREATE TABLE memories (
+  id TEXT PRIMARY KEY,
+  player_id TEXT NOT NULL,
+  type TEXT NOT NULL,
+  card_id TEXT,
+  from_player TEXT,
+  emotion_tag TEXT,
+  note TEXT,
+  pinned INTEGER DEFAULT 0,
+  locked_until TEXT,             -- Zeitkapsel-Feature
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Story-Fortschritt
+CREATE TABLE story_progress (
+  player_id TEXT,
+  chapter_id TEXT,
+  ink_path TEXT,                 -- aktueller inkjs-Knoten
+  choices TEXT,                  -- JSON array der Entscheidungen
+  unlocked_at TEXT,
+  PRIMARY KEY (player_id, chapter_id)
+);
+
+-- Film-Sammlung (gespielte Filmkarten = Poster im Wohnzimmer)
+CREATE TABLE player_films (
+  player_id TEXT,
+  tmdb_id INTEGER,
+  card_id TEXT,
+  added_at TEXT,
+  PRIMARY KEY (player_id, tmdb_id)
+);
+```
+
+---
+
+## 9. Mediensystem
+
+### 9.1 TMDB API Integration
+
+```typescript
+// server/media/tmdb.ts
+const TMDB_BASE = 'https://api.themoviedb.org/3';
+const POSTER_BASE = 'https://image.tmdb.org/t/p/w500';
+
+export async function fetchMovieCard(tmdbId: number): Promise<Partial<Card>> {
+  const [movie, videos] = await Promise.all([
+    fetch(`${TMDB_BASE}/movie/${tmdbId}?api_key=${TMDB_KEY}&language=de`).then(r => r.json()),
+    fetch(`${TMDB_BASE}/movie/${tmdbId}/videos?api_key=${TMDB_KEY}`).then(r => r.json())
+  ]);
+
+  const trailer = videos.results?.find((v: any) => v.type === 'Trailer' && v.site === 'YouTube');
+
+  return {
+    id: `film-tmdb-${tmdbId}`,
+    name: movie.title,
+    type: 'filmscene',
+    rarity: 'legendary',
+    media: {
+      image: `${POSTER_BASE}${movie.poster_path}`,
+      tmdb_trailer_key: trailer?.key ?? null
+    },
+    lore: { text: movie.overview }
+  };
+}
+```
+
+### 9.2 Trailer als Legendary Event
+
+```typescript
+// client/scenes/GameScene.ts (Phaser)
+this.colyseus.onMessage("legendary_event", (data) => {
+  // Spiel pausiert
+  this.scene.pause();
+  
+  // React-Komponente aktiviert YouTube-Embed
+  EventBus.emit('show_trailer', { youtubeKey: data.trailer_key });
+  
+  // Nach 90 Sekunden oder Skip:
+  EventBus.on('trailer_ended', () => {
+    this.scene.resume();
+  });
+});
+```
+
+---
+
+## 10. MVP-Variante — Sofort umsetzbar
+
+### 10.1 MVP-Scope (2-4 Wochen Solo)
+
+```
+✅ MVP ENTHÄLT:
+  • 1v1 Kartenspiel via WebSocket (Colyseus)
+  • 20 YAML-Karten (5 Typen)
+  • Einfache Spielregeln: Mana, HP, Angriff, 3 Effekt-Typen
+  • KI-Gegner (1 Persönlichkeit, OpenRouter/Qwen)
+  • Wohnzimmer-Lobby (React/HTMX)
+  • Auth via PocketBase
+  • Event-Log in SQLite
+  • 1 Starter-Story (inkjs, 5 Knoten)
+  • Poster-Wand mit TMDB (3-5 Filme)
+
+❌ NICHT IM MVP:
+  • Story-Engine (komplex)
+  • Weltenkarte
+  • Replay-System
+  • Mobile-PWA
+  • Async-Modus
+  • Immich-Integration
+```
+
+### 10.2 Migration von bestehender Snake-Basis
+
+Das Repo hat bereits:
+- ✅ TypeScript + Node.js
+- ✅ WebSocket Server (`ws`)
+- ✅ Client/Server Trennung
+- ✅ Message-Type-System (`messages.ts`)
+- ✅ SocketManager-Pattern
+
+**Migrationsplan:**
+
+```
+1. Colyseus installieren (ersetzt ws + manuelle SocketManager)
+   npm install colyseus colyseus.js
+
+2. CardGameRoom.ts erstellen (auf SocketManager aufbauend)
+   src/server/rooms/CardGameRoom.ts
+
+3. messages.ts → Card-Game Message Types erweitern
+   type: "play_card" | "draw_card" | "end_turn" | "game_state"
+
+4. Phaser.js zum Client hinzufügen
+   npm install phaser
+   src/client/scenes/GameScene.ts
+
+5. YAML-Karten-Parser implementieren
+   npm install js-yaml
+   src/shared/card-loader.ts
+
+6. PocketBase als Docker-Service hinzufügen
+   docker-compose.yml
+```
+
+### 10.3 Starter-Kartenset (5 Karten für MVP)
+
+```yaml
+# Die ersten 5 Karten:
+1. memory-erster-tag.yaml        → cost:1, heal:2, story_trigger: "anfang"
+2. place-kueche-nachts.yaml      → cost:2, mana_next_turn:+1
+3. emotion-nostalgie.yaml        → cost:1, emotion_power:+3
+4. decision-bleib-oder-geh.yaml  → cost:3, branching_event (inkjs)
+5. legendary-sommernacht.yaml    → cost:7, damage_all:3 + trailer_event
+```
+
+---
+
+## 11. Offline / Local-First Variante
+
+### 11.1 Service Worker + SQLite WASM
+
+```
+OFFLINE-MODUS:
+  • @sqlite.org/sqlite-wasm im Browser (Spielstand lokal, OPFS-Storage)
+  • Service Worker (PWA, offline spielbar)
+  • Ollama (lokal) statt OpenRouter für KI
+  • Sync wenn online: JSONL Event-Log hochladen (Append-Only = konfliktfrei)
+```
+
+### 11.2 Obsidian-Vault Integration
+
+```
+OBSIDIAN SYNC:
+  • Karten-YAMLs direkt in Obsidian bearbeitbar
+  • Story-.ink-Files als Obsidian-Notizen
+  • Erinnerungsarchiv als Obsidian-Vault
+  • CardVerse liest YAML-Vault über konfigurierbaren Pfad
+
+VAULT-STRUKTUR:
+  cardverse-vault/
+  ├── cards/
+  │   ├── memories/
+  │   └── legendary/
+  ├── story/
+  │   └── chapters/
+  └── memories/
+      └── archive/
+```
+
+---
+
+## 12. Mobile-First / PWA Variante
+
+```
+MOBILE FEATURES (Phase 3):
+  • Touch-Drag für Karten (Pointer Events API + Phaser Touch)
+  • Swipe-Navigation zwischen Wohnzimmer/Match/Story
+  • Push Notifications (Web Push API) bei Gegner-Zug
+  • Offline-Modus (Service Worker)
+  • Add to Home Screen (PWA Manifest + Icons)
+
+MOBILES LAYOUT:
+  Portrait: Karten unten, Spielfeld oben, Mana-Leiste Mitte
+  Landscape: Side-by-side Spieler, Deck rechts
+
+OPTIONALER NATIV-WRAPPER:
+  • Capacitor.js: Web → iOS/Android ohne Code-Änderung
+  • Tauri: Web → Desktop-App (Windows/Mac/Linux)
+```
+
+---
+
+## 13. Sicherheit & Datenschutz
+
+### 13.1 Grundprinzipien
+
+```
+SERVER-AUTORITÄT:
+  • Alle Spielzüge werden serverseitig validiert (Colyseus)
+  • Client sieht NUR seine eigenen Handkarten (Colyseus Secret State)
+  • Kein Client kann cheaten (Event-Log ist append-only, serverseitig)
+
+AUTHENTIFIZIERUNG:
+  • PocketBase Auth (Email/Password + Magic Link)
+  • JWT Tokens, kurze Lebensdauer (1h Access, 7d Refresh)
+  • Optional: OAuth2 (Google, GitHub)
+
+WEBSOCKET SICHERHEIT:
+  • Token-Validierung bei Verbindungsaufbau
+  • Rate Limiting: max 10 Aktionen/Sekunde pro Client
+  • Match-ID Validierung: nur Teilnehmer können beitreten
+  • Cloudflare DDoS-Schutz (kostenlos)
+```
+
+### 13.2 Datenschutz-Features
+
+```
+PRIVATE RÄUME (Standard):
+  • Matches nur via Code beitreten (kein öffentliches Matchmaking)
+  • Erinnerungsarchiv nur für den Besitzer sichtbar
+  • Keine öffentlichen Profile (opt-in)
+
+DATENSPARSAMKEIT:
+  • Keine Third-Party Analytics
+  • Keine Werbe-Tracker
+  • Minimale Profilinfos (Username, Avatar)
+  • Self-Hosting: alle Daten unter eigener Kontrolle
+
+DATEN-EXPORT (DSGVO):
+  • Alle eigenen Events als JSONL
+  • Karten-Sammlung als YAML
+  • Story-Fortschritt als Markdown
+  • Erinnerungsarchiv als ZIP
+
+RECHT AUF VERGESSENWERDEN:
+  • Account löschen = sofortige anonymisierung aller Events
+  • Match-Replays: nach 90 Tagen auto-gelöscht (konfigurierbar)
+```
+
+---
+
+## 14. Skalierungsvariante (1000+ Nutzer)
+
+```
+SKALIERUNGSARCHITEKTUR:
+  [CDN / Cloudflare R2]
+        │
+  [React SPA — statisch]
+        │
+  [Cloudflare Workers — API Gateway]
+        │
+  ┌─────┼─────┐
+  ▼     ▼     ▼
+[Colyseus] [Colyseus] [Colyseus]  ← Mehrere Instanzen
+  Room-Cluster (Fly.io oder Hetzner)
+        │
+  [PostgreSQL + Event Store]        ← Wenn SQLite nicht mehr reicht
+        │
+  [AI Worker Pool]                  ← vLLM oder mehrere Ollama-Instanzen
+```
+
+**Cloudflare Durable Objects für Game State** (empfohlen für echte Skalierung):
+```typescript
+// Ein Durable Object pro Match = Edge-nah, kein Race-Condition
+export class MatchRoom implements DurableObject {
+  async webSocketMessage(ws: WebSocket, message: string) {
+    const event = JSON.parse(message);
+    await this.state.storage.put(`event_${Date.now()}`, event);
+    this.broadcast(this.state);
+  }
+}
+```
+
+---
+
+## 15. Open-Source-Inspirationsprojekte (vollständig recherchiert)
+
+### Game Engine / Multiplayer
+| Projekt | GitHub | Relevanz |
+|---------|--------|---------|
+| **boardgame.io** | github.com/boardgameio/boardgame.io | Spiellogik, Secret State, Bots |
+| **Colyseus.io** | github.com/colyseus/colyseus | Multiplayer Room System |
+| **colyseus-card-demo** | github.com/sominator/colyseus-2d-multiplayer-card-game-templates | Turn-Based Referenz |
+| **Phaser React Template** | github.com/phaserjs/template-react-ts | Offizieller Startpunkt |
+| **hearthstone-os** | github.com/kvfrans/hearthstone-os | Hearthstone-Klon |
+| **Cardshifter** | github.com/Cardshifter/Cardshifter | ECS für TCGs |
+
+### Story / Narrative
+| Projekt | GitHub | Relevanz |
+|---------|--------|---------|
+| **inkjs** | github.com/y-lohse/inkjs | Browser-Narrative-Engine |
+| **Inky** | github.com/inkle/inky | .ink Story-Editor |
+| **Twine** | twinery.org | Visuelle Story-Erstellung |
+
+### Kommunikation / Erinnerungen
+| Projekt | GitHub | Relevanz |
+|---------|--------|---------|
+| **Immich** | github.com/immich-app/immich | Selbst gehostetes Fotoarchiv |
+| **Spacetime** | github.com/alexandrecpedro/spacetime | Erinnerungs-Timeline |
+| **Time Capsule** | github.com/acm-projects/Time-Capsule | Zeitkapsel-Erinnerungen |
+| **lite-youtube-embed** | github.com/paulirish/lite-youtube-embed | Trailer ohne Overhead |
+
+### AI / Backend
+| Projekt | URL | Relevanz |
+|---------|-----|---------|
+| **LiteLLM** | github.com/BerriAI/litellm | AI Model Router |
+| **Ollama** | ollama.ai | Lokale KI |
+| **PocketBase** | pocketbase.io | Backend-in-a-Binary |
+| **GameMasterAI** | github.com/deckofdmthings/GameMasterAI | GPT als Dungeon Master |
+
+### Forschung
+| Paper | URL | Relevanz |
+|-------|-----|---------|
+| **Cardiverse** | arxiv.org/abs/2502.07128 | LLM-generierte Kartenspiele |
+| **LLMs in Slay the Spire** | dl.acm.org/doi/fullHtml/10.1145/3649921.3650013 | LLM Spielstärke |
+| **TCG DSL (Uni Twente)** | fmt.ewi.utwente.nl/media/283.pdf | Karteneffekt-DSL |
+
+---
+
+## 16. Roadmap
+
+```
+PHASE 0 — FUNDAMENT (Woche 1-2)
+  ✦ Bestehende Snake-Basis auf CardVerse migrieren (Colyseus installieren)
+  ✦ YAML-Karten-Parser (js-yaml) + 5 Starter-Karten
+  ✦ Einfaches 1v1 WebSocket-Match (CardGameRoom.ts)
+  ✦ PocketBase Docker Service
+
+PHASE 1 — MVP (Woche 3-6)
+  ✦ Vollständige Spielregeln (Mana, HP, 5 Effekt-Typen)
+  ✦ KI-Gegner via OpenRouter (Qwen-2.5-7B, 1 Persönlichkeit)
+  ✦ Basis-Wohnzimmer-Lobby (React + HTMX)
+  ✦ inkjs Story-Integration (5 Knoten, 1 Kapitel)
+  ✦ Event-Log in SQLite
+
+PHASE 2 — KOMMUNIKATION (Monat 2-3)
+  ✦ Karten als Kommunikationsmittel (Karten schicken)
+  ✦ Erinnerungsarchiv (Memory Vault + Timeline)
+  ✦ Filmplakat-Wand (TMDB API)
+  ✦ Trailer-Events (lite-youtube-embed + Legendary)
+  ✦ Async-Match-Modus (Push Notifications)
+  ✦ Story-Engine (10 Kapitel, inkjs)
+
+PHASE 3 — ERWEITERUNG (Monat 4-6)
+  ✦ Weltenkarte (Hex-Grid, Light-Monopoly-Element)
+  ✦ Replay-System (JSONL Viewer)
+  ✦ PWA / Mobile (Service Worker, Push)
+  ✦ Obsidian-Vault-Integration
+  ✦ 3 KI-Persönlichkeiten
+  ✦ Immich-Fotoarchiv-Integration
+
+PHASE 4 — SKALIERUNG (Monat 7+)
+  ✦ Cloudflare Durable Objects (wenn >100 CCU)
+  ✦ Multiplayer-Turniere
+  ✦ Karten-Editor (YAML im Browser bearbeiten)
+  ✦ Community-Kartensets (Fan-Erweiterungen)
+  ✦ Desktop-Control-Center (Tauri oder Electron)
+```
+
+---
+
+## 17. Nächste konkrete Schritte (heute)
+
+```bash
+# Schritt 1: Branch ist bereits korrekt
+# Branch: claude/cardverse-game-portal-research-Ra2HJ ✓
+
+# Schritt 2: Colyseus installieren
+npm install colyseus colyseus.js @colyseus/schema
+
+# Schritt 3: Karten-Verzeichnis anlegen
+mkdir -p data/cards/memory data/cards/places data/cards/legendary data/cards/emotions
+mkdir -p data/story/chapters
+
+# Schritt 4: Erste Karte schreiben
+# → data/cards/memory/erster-tag.yaml (Schema oben)
+
+# Schritt 5: CardGameRoom.ts erstellen
+# → src/server/rooms/CardGameRoom.ts (Vorlage oben)
+
+# Schritt 6: messages.ts erweitern
+# → Card-Game Message Types hinzufügen
+
+# Schritt 7: PocketBase Docker Service
+# → docker-compose.yml erstellen
+```
+
+---
+
+*Dokument generiert: 2026-05-23 | Forschung: Multi-Agenten (4 parallele Agents)*
+*Projekt: CARDVERSE / MT-BIZEPS-CARDVERSE-001*
+*Basis-Repo: /home/user/NewGame | Branch: claude/cardverse-game-portal-research-Ra2HJ*
+
+*Recherche-Quellen: boardgame.io, Colyseus.io Docs, TMDB API, OpenRouter, Phaser.io,*
+*arXiv:2502.07128 (Cardiverse), ACM 2024 (LLMs in Slay the Spire), PocketBase Docs,*
+*Hetzner Cloud Pricing, Cloudflare Durable Objects, lite-youtube-embed, inkjs, Immich*
+
+
+================================================================================
+DATEI: docs/AI_MODELS_RESEARCH.md
+================================================================================
+
+# KI-Modelle für CARDVERSE — Recherche 2025/2026
+## Kostenlose und budgetfreundliche Optionen
+
+---
+
+## OpenRouter — Kostenlose Modelle (Stand Mai 2026)
+
+OpenRouter bietet derzeit **28 kostenlose Modelle** (`:free`-Suffix).
+
+### Empfohlene Free-Tier-Modelle
+
+| Modell | Kontext | Tool Calling | Beste Spielaufgabe |
+|--------|---------|-------------|-------------------|
+| `meta-llama/llama-3.3-70b-instruct:free` | 131K | ✅ OpenAI-Format | Erzähler, NPC-Dialog, Game Master |
+| `deepseek/deepseek-v4-flash:free` | 1M (!) | ✅ | Komplexe Logik, langer Kontext |
+| `qwen/qwen-2.5-7b-instruct:free` | 32K | ✅ | Gegner-KI, Flavor-Texte (schnell) |
+| `google/gemma-3-12b-it:free` | 131K | ✅ | NPC-Dialog, multimodal |
+| `mistralai/mistral-7b-instruct:free` | 32K | ✅ | Allgemein, einfache Dialoge |
+| `mistralai/mistral-nemo:free` | 128K | ✅ | Lange Dialoge, Instruktionsbefolgung |
+
+**Free-Tier Rate Limits**: ~20 Anfragen/Minute, ~200 Anfragen/Tag (je nach Modell und Serverauslastung).
+
+### Günstige bezahlte Optionen (bei Überschreitung Free Tier)
+
+| Modell | Input $/1M | Output $/1M | Empfehlung |
+|--------|-----------|------------|-----------|
+| `mistralai/mistral-nemo` | $0.02 | $0.03 | Story-Narration (bestes Preis-Qualität) |
+| `mistralai/mistral-small` | $0.10 | $0.30 | Allgemein |
+| `deepseek/deepseek-v3` | $0.32 | $0.89 | Game Master, Reasoning |
+| `meta-llama/llama-3.3-70b-instruct` | $0.12 | $0.40 | Premium-Qualität |
+
+**Praxis-Kalkulation**: Bei 500 Token/Anfrage und 1.000 Anfragen/Tag
+= $0.06/Tag mit Mistral Nemo = **~$1.80/Monat** — praktisch gratis.
+
+---
+
+## Lokale Modelle via Ollama (8 GB RAM/VRAM)
+
+### Empfohlene Modelle
+
+| Modell | RAM | Tokens/Sek (GPU) | Qualität |
+|--------|-----|-----------------|---------|
+| `gemma3:12b` (Q4_K_M) | ~7.5 GB | 20–30 | ⭐⭐⭐⭐⭐ NPC, Story |
+| `qwen2.5:7b` | ~4.5 GB | 30–45 | ⭐⭐⭐⭐ Gegner-KI (schnell) |
+| `llama3.2:8b` | ~5.5 GB | 25–40 | ⭐⭐⭐⭐ Allround |
+| `mistral:7b` | ~4.5 GB | 30–40 | ⭐⭐⭐ Allgemein |
+| `phi4-mini:3.8b` | ~2.5 GB | 50–80 | ⭐⭐⭐ Sehr schnell, einfache Tasks |
+
+**Wichtig**: `OLLAMA_KEEP_ALIVE=-1` setzen, sonst 5–30 Sek Kaltstart pro Anfrage!
+
+```bash
+# Installation:
+ollama pull gemma3:12b   # Für NPC-Dialog + Story (bestes lokales Modell)
+ollama pull qwen2.5:7b   # Für Gegner-KI (schnellstes lokales Modell)
+ollama pull phi4-mini    # Für einfache Entscheidungen (ultra-schnell)
+
+# Starten mit permanentem Keepalive:
+OLLAMA_KEEP_ALIVE=-1 ollama serve
+```
+
+---
+
+## Modell-Routing nach Spielaufgabe
+
+### Entscheidungsmatrix
+
+| Spielaufgabe | Cloud (Free) | Lokal (Ollama) | Max Tokens |
+|-------------|-------------|---------------|-----------|
+| **Gegner-KI Entscheidung** | `qwen/qwen-2.5-7b-instruct:free` | `phi4-mini:3.8b` | 100 |
+| **NPC-Dialog (kurz)** | `llama-3.3-70b:free` | `gemma3:12b` | 150 |
+| **Story-Narration** | `llama-3.3-70b:free` | `mistral-nemo:12b` | 400 |
+| **Karten-Flavor-Text** | `mistral-7b:free` | `qwen2.5:7b` | 80 |
+| **Game Master** | `deepseek-v3` (paid) | `llama3.2:8b` | 500 |
+| **Emotionale Szenen** | `mistral-nemo-celeste` | `gemma3:12b` | 300 |
+
+### Forschungsergebnis
+
+> "Qwen-2.5-7B übertrifft GPT-4 in Kartenspiel-Entscheidungen, da größere Modelle zur
+> Überanalyse neigen." — *Language-Driven Play in Slay the Spire*, ACM 2024
+
+---
+
+## LiteLLM Router: OpenRouter → Ollama Fallback
+
+```python
+# server/ai/litellm_config.py
+import litellm
+
+# Automatischer Fallback wenn Free-Tier exhausted oder offline
+litellm.fallbacks = [
+    {
+        "model": "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+        "fallbacks": [
+            "openrouter/mistralai/mistral-nemo",  # bezahlt aber günstig
+            "ollama_chat/llama3.2:8b"             # lokal, kostenlos
+        ]
+    },
+    {
+        "model": "openrouter/qwen/qwen-2.5-7b-instruct:free",
+        "fallbacks": ["ollama_chat/qwen2.5:7b"]
+    }
+]
+
+async def ai_decide_card(game_state: dict, personality: dict) -> dict:
+    response = await litellm.acompletion(
+        model=personality["model_cloud"],
+        messages=[
+            {"role": "system", "content": build_system_prompt(personality)},
+            {"role": "user", "content": format_game_state(game_state)}
+        ],
+        response_format={"type": "json_object"},
+        max_tokens=100,
+        temperature=personality.get("temperature", 0.7)
+    )
+    return parse_ai_decision(response.choices[0].message.content)
+```
+
+### Kostenschätzung: 100 gleichzeitige Spieler
+
+```
+Annahmen:
+  • 10 Anfragen/Match-Stunde (KI-Gegner)
+  • 50% der Matches vs. AI
+  • 100 CCU = 50 AI-Matches gleichzeitig
+
+Täglich:
+  • 50 Matches × 8h × 10 Req/h = 4.000 Anfragen
+  • Free Tier: 200 Req/Tag → nur erste 5% kostenlos
+  • Restliche 3.800 Req via Mistral Nemo: 3.800 × 500 Token × $0.025/1M = $0.048/Tag
+
+Monatliche KI-Kosten bei 100 CCU: ~$1.44/Monat
+```
+
+---
+
+## Spezielle Fine-Tunes (HuggingFace)
+
+| Modell | Quelle | Beschreibung |
+|--------|--------|-------------|
+| `Gemma3NPC` | HuggingFace | Für Live-NPC-Interaktionen in Spielen |
+| `mn-celeste-12b` | OpenRouter | Mistral Nemo, für kreative/emotionale Narrative |
+| `hermes-3:8b` | Ollama | Roleplay-fokussiert, starke Charakterkonsistenz |
+
+---
+
+## Alternativer Setup: Mistral La Plateforme (kostenlos)
+
+Mistral bietet **1 Milliarde Token/Monat kostenlos** direkt auf ihrer Plattform.
+Für ein kleines Kartenspiel reicht das dauerhaft aus.
+
+```python
+# Direktzugriff via OpenAI-kompatiblem Endpoint:
+client = OpenAI(
+    base_url="https://api.mistral.ai/v1",
+    api_key=MISTRAL_API_KEY  # kostenloser Key auf console.mistral.ai
+)
+```
+
+---
+
+*Recherchiert: 2026-05-23 | Quellen: OpenRouter Docs, Ollama Hub, arXiv 2509.01328, ACM 2024*
+
+
+================================================================================
+DATEI: data/ai/personalities.yaml
+================================================================================
+
+# CARDVERSE AI Personalities
+# Modell-Empfehlungen basieren auf OpenRouter Free Tier (Stand Mai 2026)
+# Primär: OpenRouter kostenlos | Fallback: Ollama lokal
+
+personalities:
+
+  - id: nostalgiker
+    name: "Die Erinnerung"
+    description: "emotional, reaktiv, bevorzugt Memory-Karten"
+    style: >
+      Spiele Memory-Karten sobald möglich.
+      Verteidige zuerst, greife nur an wenn nötig.
+      Deine Texte sind poetisch und melancholisch.
+    model_cloud: "meta-llama/llama-3.3-70b-instruct:free"
+    model_local: "llama3.2:8b"
+    temperature: 0.8
+    preferred_card_types: [memory, emotion, place]
+    avoid_card_types: [decision]
+
+  - id: stratege
+    name: "Der Planer"
+    description: "rational, langfristig denkend, Combo-Spieler"
+    style: >
+      Baue Kombos auf bevor du angreifst.
+      Spare Mana wenn möglich.
+      Warte auf den richtigen Moment.
+      Antworte präzise und ohne Emotionen.
+    model_cloud: "qwen/qwen-2.5-7b-instruct:free"
+    model_local: "qwen2.5:7b"
+    temperature: 0.3
+    preferred_card_types: [place, decision]
+    avoid_card_types: [emotion]
+
+  - id: chaot
+    name: "Der Wilde"
+    description: "unberechenbar, risikofreudig, überraschend"
+    style: >
+      Spiele zufällig und überraschend.
+      Gehe Risiken ein. Ignoriere Strategie.
+      Deine Texte sind kurz und frech.
+    model_cloud: "mistralai/mistral-7b-instruct:free"
+    model_local: "mistral:7b"
+    temperature: 1.0
+    preferred_card_types: [legendary, decision]
+    avoid_card_types: [place]
+
+  - id: geschichtenerzaehler
+    name: "Der Erzähler"
+    description: "narrativ-fokussiert, triggert Story-Events"
+    style: >
+      Spiele bevorzugt Karten, die Story-Fragmente auslösen.
+      Priorisiere Lore über Strategie.
+      Deine Texte sind episch und atmosphärisch.
+    model_cloud: "meta-llama/llama-3.3-70b-instruct:free"
+    model_local: "gemma3:12b"
+    temperature: 0.9
+    preferred_card_types: [memory, legendary, decision]
+    avoid_card_types: []
+
+# AI Worker Konfiguration
+ai_worker:
+  primary: openrouter
+  fallback: ollama
+
+  openrouter:
+    base_url: "https://openrouter.ai/api/v1"
+    default_model: "meta-llama/llama-3.3-70b-instruct:free"
+    rate_limit_per_minute: 20
+    rate_limit_per_day: 200
+
+  ollama:
+    base_url: "http://localhost:11434/v1"
+    default_model: "llama3.2:8b"
+    keep_alive: -1              # Modell dauerhaft im Speicher
+
+  # JSON-Schema für Spielentscheidungen (Tool Calling)
+  decision_schema:
+    type: object
+    required: [action, reasoning]
+    properties:
+      action:
+        type: string
+        enum: [play_card, attack, pass]
+      card_id:
+        type: string
+      target:
+        type: string
+        nullable: true
+      reasoning:
+        type: string
+        description: "Kurze Begründung (max 50 Zeichen)"
+
+
+================================================================================
+DATEI: data/cards/memory/erster-tag.yaml
+================================================================================
+
+id: memory-erster-tag-001
+name: "Der erste Tag"
+version: 1
+type: memory
+rarity: common
+cost: 1
+
+stats:
+  attack: 0
+  defense: 2
+  emotion_power: 3
+
+effects:
+  - trigger: on_play
+    action:
+      type: heal
+      target: self
+      amount: 2
+  - trigger: on_play
+    action:
+      type: story_fragment
+      fragment_id: "anfang-chapter-1"
+
+media:
+  image: "assets/cards/erster-tag.webp"
+  audio: null
+  video_clip: null
+
+lore:
+  text: >
+    Alles beginnt mit einem ersten Tag.
+    Manchmal weißt du nicht, dass es der erste ist,
+    bis viele danach vergangen sind.
+  chapter: "DER_ANFANG"
+  emotion_tag: neugier
+  unlock_condition: null
+
+ai_tags:
+  - memory
+  - defensive
+  - story_trigger
+  - low_cost
+  - healing
+
+collectible:
+  obtained_from: starter_deck
+  tradeable: false
+  flavor_quote: "Der erste Schritt beginnt immer mit einem Zögern."
+
+
+================================================================================
+DATEI: data/cards/memory/kueche-um-drei.yaml
+================================================================================
+
+id: place-kueche-um-drei-001
+name: "Küche um 3 Uhr nachts"
+version: 1
+type: place
+rarity: uncommon
+cost: 2
+
+stats:
+  attack: 0
+  defense: 4
+  emotion_power: 4
+
+effects:
+  - trigger: on_play
+    action:
+      type: mana_bonus
+      target: self
+      amount: 1
+      duration: next_turn
+  - trigger: on_play
+    action:
+      type: draw
+      count: 1
+
+media:
+  image: "assets/cards/kueche-nachts.webp"
+  audio: "assets/audio/kueche-ambient.mp3"
+  video_clip: null
+
+lore:
+  text: >
+    Der Kühlschrank summt. Das Licht ist zu hell.
+    Alle Probleme der Welt werden kleiner
+    bei einem Glas Wasser um drei.
+  chapter: "DIE_STILLE_STUNDEN"
+  emotion_tag: geborgenheit
+  unlock_condition: "match.played.count >= 2"
+
+ai_tags:
+  - place
+  - mana_generation
+  - draw
+  - defensive
+  - sanctuary
+
+collectible:
+  obtained_from: starter_deck
+  tradeable: true
+  flavor_quote: "Hier wurden die wichtigsten Entscheidungen getroffen."
+
+
+================================================================================
+DATEI: data/cards/emotions/nostalgie.yaml
+================================================================================
+
+id: emotion-nostalgie-001
+name: "Nostalgie"
+version: 1
+type: emotion
+rarity: common
+cost: 1
+
+stats:
+  attack: 0
+  defense: 0
+  emotion_power: 6
+
+effects:
+  - trigger: on_play
+    action:
+      type: emotion_boost
+      target: all_memory_cards_in_hand
+      stat: emotion_power
+      amount: 2
+  - trigger: on_play
+    action:
+      type: story_fragment
+      fragment_id: "erinnerung-welle"
+
+media:
+  image: "assets/cards/nostalgie.webp"
+  audio: null
+  video_clip: null
+
+lore:
+  text: >
+    Der Geruch von damals.
+    Die Wärme, die du nicht festhalten konntest.
+    Nostalgie ist Liebe ohne Adresse.
+  chapter: "DIE_VERGANGENE_WELT"
+  emotion_tag: nostalgie
+  unlock_condition: null
+
+ai_tags:
+  - emotion
+  - buff
+  - memory_synergy
+  - story_trigger
+  - low_cost
+
+collectible:
+  obtained_from: starter_deck
+  tradeable: false
+  flavor_quote: "Man wird nie wissen, wann das letzte Mal das letzte Mal war."
+
+
+================================================================================
+DATEI: data/cards/emotions/entscheidung-bleib-oder-geh.yaml
+================================================================================
+
+id: decision-bleib-oder-geh-001
+name: "Bleib oder geh?"
+version: 1
+type: decision
+rarity: rare
+cost: 3
+
+stats:
+  attack: 0
+  defense: 0
+  emotion_power: 8
+
+effects:
+  - trigger: on_play
+    action:
+      type: branching_event
+      ink_file: "story/decisions/bleib-oder-geh.ink"
+      choices:
+        - label: "Bleiben"
+          effect:
+            type: heal
+            target: self
+            amount: 5
+        - label: "Gehen"
+          effect:
+            type: draw
+            count: 3
+
+media:
+  image: "assets/cards/entscheidung.webp"
+  audio: null
+  video_clip: null
+
+lore:
+  text: >
+    Manchmal ist die wichtigste Frage nicht,
+    was du tust, sondern ob du es tust.
+    Beide Wege führen irgendwohin.
+  chapter: "DER_SCHEIDEWEG"
+  emotion_tag: ungewissheit
+  unlock_condition: "match.won.count >= 1"
+
+ai_tags:
+  - decision
+  - branching
+  - high_value
+  - story_core
+  - choice_mechanic
+
+collectible:
+  obtained_from: story_reward
+  tradeable: false
+  flavor_quote: "Jede Entscheidung tötet tausend andere Möglichkeiten."
+
+
+================================================================================
+DATEI: data/cards/legendary/sommernacht.yaml
+================================================================================
+
+id: legendary-sommernacht-001
+name: "Die Sommernacht"
+version: 1
+type: legendary
+rarity: legendary
+cost: 7
+
+stats:
+  attack: 5
+  defense: 5
+  emotion_power: 15
+
+effects:
+  - trigger: on_play
+    action:
+      type: legendary_event
+      event_id: "trailer-sommernacht"
+      youtube_key: null          # optional: YouTube Trailer-ID eintragen
+      duration_seconds: 60
+  - trigger: on_play
+    action:
+      type: deal_damage
+      target: all_enemies
+      amount: 3
+  - trigger: on_play
+    action:
+      type: heal
+      target: self
+      amount: 5
+  - trigger: on_play
+    action:
+      type: story_fragment
+      fragment_id: "sommernacht-finale"
+
+media:
+  image: "assets/cards/sommernacht.webp"
+  audio: "assets/audio/sommernacht-theme.mp3"
+  video_clip: null
+  tmdb_id: null                  # optional: TMDB Film-ID
+
+lore:
+  text: >
+    Es gibt Nächte, die länger dauern als ihre Stunden.
+    Diese war eine davon.
+    Der Sommer, der niemals wirklich endete.
+  chapter: "DER_HÖHEPUNKT"
+  emotion_tag: euphorie
+  unlock_condition: "match.won.count >= 5"
+
+ai_tags:
+  - legendary
+  - aoe_damage
+  - healing
+  - story_climax
+  - high_cost
+  - trailer_event
+
+collectible:
+  obtained_from: match_reward
+  tradeable: false
+  flavor_quote: "Diese Nacht existiert in uns, solange wir uns erinnern."
+
+
+================================================================================
+DATEI: data/story/chapters/anfang.ink
+================================================================================
+
+// CARDVERSE Story Engine — Kapitel 1: Der Anfang
+// Format: inkjs (.ink)
+// Triggered von: memory-erster-tag-001
+
+=== anfang_chapter_1 ===
+
+Du spielst die Karte "Der erste Tag".
+Ein Moment lang hält alles inne.
+
+Der erste Tag — war das wirklich so lange her?
+
+* [Erinnern]
+    Ja. Es war der Moment, als alles möglich schien.
+    Die Stadt war neu. Die Person auch.
+    +3 Emotionspunkte.
+    -> erinnerung_tief
+
+* [Weitermachen]
+    Keine Zeit für Sentimentalitäten.
+    Das Match läuft.
+    -> match_fortgesetzt
+
+* [Nachdenken]
+    Du hältst inne. Was ist seitdem passiert?
+    Viel. Zu viel. Nicht genug.
+    +1 Emotionspunkt. Neue Karte gezogen.
+    -> nachdenken_ende
+
+
+=== erinnerung_tief ===
+
+Ein Bild taucht auf.
+Keine Worte — nur ein Gefühl.
+Die Art von Erinnerung, die sich anfühlt wie ein warmer Raum.
+
+~ emotion_power += 3
+~ story_unlocked = "anfang-chapter-2"
+
+Du hast Kapitel 2 freigeschaltet: "Die erste Nacht".
+-> END
+
+
+=== match_fortgesetzt ===
+
+Manchmal ist das Beste, was man tun kann,
+einfach weiterzumachen.
+-> END
+
+
+=== nachdenken_ende ===
+
+Manche Fragen haben keine Antworten.
+Nur Erinnerungen, die sich wie Antworten anfühlen.
+-> END
+
+
+================================================================================
+DATEI: docker-compose.yml
+================================================================================
+
+services:
+  pocketbase:
+    image: ghcr.io/muchobien/pocketbase:latest
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    volumes:
+      - pocketbase_data:/pb/pb_data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8090/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  server:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "2567:2567"    # Colyseus WebSocket
+      - "3000:3000"    # HTTP API
+    environment:
+      - NODE_ENV=production
+      - POCKETBASE_URL=http://pocketbase:8090
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
+    depends_on:
+      pocketbase:
+        condition: service_healthy
+
+volumes:
+  pocketbase_data:
+
+
+================================================================================
+DATEI: beziehungshybrid/daten.js
+================================================================================
+
+// BEZIEHUNGSHYBRID — Spieldaten
+// Passe Platzhalter [NAME_1], [NAME_2], [ORT], [DATUM] an eure Geschichte an.
+
+const GAME_DATA = {
+
+  // ─── Einstellungen ──────────────────────────────────────────────────────────
+  config: {
+    spieler1_name: "[Name 1]",
+    spieler2_name: "[Name 2]",
+    beginn_datum: "[Datum eures Kennenlernens]",
+    erster_ort: "[Euer erster gemeinsamer Ort]",
+    lieblingsfilm: "[Euer Lieblingsfilm zusammen]",
+    lieblingsort: "[Euer Lieblingsort]"
+  },
+
+  // ─── Hybridamen ─────────────────────────────────────────────────────────────
+  hybridamen: [
+    {
+      id: "luna",
+      name: "Luna",
+      etage: "Prolog",
+      rolle: "Einführungsguide",
+      emoji: "🌙",
+      beispielsatz: "Willkommen in eurer Reise. Ich führe euch durch die ersten Schritte.",
+      stimme: "sanft, mysteriös",
+      farbe: "#6e48aa",
+      hintergrund: "linear-gradient(135deg, #2c1654, #6e48aa)"
+    },
+    {
+      id: "mira",
+      name: "Mira",
+      etage: "Erinnerungen",
+      rolle: "Gedächtniswächterin",
+      emoji: "📜",
+      beispielsatz: "Erinnert ihr euch noch an den Moment, als ihr euch zum ersten Mal in die Augen gesehen habt?",
+      stimme: "warm, nostalgisch",
+      farbe: "#e67e22",
+      hintergrund: "linear-gradient(135deg, #8b4513, #e67e22)"
+    },
+    {
+      id: "nova",
+      name: "Nova",
+      etage: "Zukunft",
+      rolle: "Traumweberin",
+      emoji: "✨",
+      beispielsatz: "Die Zukunft gehört denen, die von ihr träumen. Was träumt ihr gemeinsam?",
+      stimme: "enthusiastisch, hell",
+      farbe: "#27ae60",
+      hintergrund: "linear-gradient(135deg, #1a5c38, #27ae60)"
+    },
+    {
+      id: "aion",
+      name: "Aion",
+      etage: "Konflikte",
+      rolle: "Brückenbauerin",
+      emoji: "⚡",
+      beispielsatz: "Konflikte sind keine Mauern. Sie sind Türen, die darauf warten, geöffnet zu werden.",
+      stimme: "ruhig, direkt",
+      farbe: "#c0392b",
+      hintergrund: "linear-gradient(135deg, #6b0d0d, #c0392b)"
+    },
+    {
+      id: "vera",
+      name: "Vera",
+      etage: "Vertrauen",
+      rolle: "Hüterin des Vertrauens",
+      emoji: "🛡️",
+      beispielsatz: "Vertrauen ist kein Ort, an den man ankommt. Es ist ein Weg, den man täglich geht.",
+      stimme: "fest, wärmend",
+      farbe: "#2980b9",
+      hintergrund: "linear-gradient(135deg, #0d3b5e, #2980b9)"
+    },
+    {
+      id: "sonja",
+      name: "Sonja",
+      etage: "Träume",
+      rolle: "Träumeschreiberin",
+      emoji: "🌌",
+      beispielsatz: "Erzählt mir von eurem schönsten gemeinsamen Traum. Ich werde ihn aufbewahren.",
+      stimme: "verträumt, leise",
+      farbe: "#8e44ad",
+      hintergrund: "linear-gradient(135deg, #3d1a5c, #8e44ad)"
+    },
+    {
+      id: "kai",
+      name: "Kai",
+      etage: "Kommunikation",
+      rolle: "Brücke der Worte",
+      emoji: "💬",
+      beispielsatz: "Reden ist gut. Zuhören ist besser. Verstehen ist Liebe.",
+      stimme: "klar, einladend",
+      farbe: "#16a085",
+      hintergrund: "linear-gradient(135deg, #0a3d30, #16a085)"
+    }
+  ],
+
+  // ─── Etagen ─────────────────────────────────────────────────────────────────
+  etagen: [
+    {
+      id: "prolog",
+      name: "Prolog",
+      hybridame_id: "luna",
+      video: "videos/prolog.mp4",
+      video_poster: "images/prolog-poster.jpg",
+      einleitungstext: "Willkommen auf eurer gemeinsamen Reise. Bevor es losgeht, schaut euch gemeinsam dieses Video an.",
+      fragen: [
+        {
+          id: "prolog-q1",
+          text: "Was ist eurer Meinung nach das Fundament einer guten Beziehung?",
+          typ: "multiple_choice",
+          optionen: ["Vertrauen", "Humor", "Kommunikation", "Gemeinsame Träume"],
+          richtige_antwort: null,
+          feedback_richtig: "Gut beobachtet! Das ist eure Basis.",
+          feedback_falsch: null
+        },
+        {
+          id: "prolog-q2",
+          text: "Wie fühlst du dich gerade — auf einer Skala von 'nervös' bis 'neugierig'?",
+          typ: "regler",
+          min: 1, max: 10,
+          min_label: "😰 nervös",
+          max_label: "🤩 neugierig",
+          richtige_antwort: null,
+          feedback_richtig: "Danke für deine Ehrlichkeit. Merken wir uns das."
+        }
+      ],
+      zufallsevents: [
+        {
+          id: "pe1",
+          text: "💫 Luna flüstert: 'Schaut euch an. So habt ihr angefangen. Mit einem ersten Blick.'",
+          auswirkung: "harmonie+5"
+        }
+      ]
+    },
+
+    {
+      id: "erinnerungen",
+      name: "Kapitel 1 — Erinnerungen",
+      hybridame_id: "mira",
+      video: "videos/erinnerungen.mp4",
+      video_poster: "images/erinnerungen-poster.jpg",
+      einleitungstext: "Mira nimmt euch mit auf eine Reise in die Vergangenheit. Schaut das Video gemeinsam an.",
+      fragen: [
+        {
+          id: "erinnerungen-q1",
+          text: "Wo habt ihr euch zum ersten Mal getroffen?",
+          typ: "freitext",
+          richtige_antwort: null,
+          feedback_richtig: "Schöne Erinnerung! Ihr wisst es noch genau.",
+          placeholder: "Beschreibe den Ort..."
+        },
+        {
+          id: "erinnerungen-q2",
+          text: "Wie klar erinnerst du dich an euer erstes Date?",
+          typ: "regler",
+          min: 1, max: 10,
+          min_label: "💭 verschwommen",
+          max_label: "🔮 kristallklar",
+          richtige_antwort: null,
+          feedback_richtig: "Interessant! Habt ihr dasselbe Gefühl?"
+        },
+        {
+          id: "erinnerungen-q3",
+          text: "Was war das erste Geschenk, das du [NAME_PARTNER] gemacht hast?",
+          typ: "multiple_choice",
+          optionen: ["Ein Buch", "Blumen", "Selbstgemachtes", "Ein Erlebnis"],
+          richtige_antwort: null,
+          feedback_richtig: "Stimmt das überein?"
+        },
+        {
+          id: "erinnerungen-q4",
+          text: "Wärst du ausgegangen, wenn [NAME_PARTNER] 1 Stunde zu spät gekommen wäre?",
+          typ: "ja_nein",
+          richtige_antwort: null,
+          feedback_richtig: "Ehrliche Antwort! Vergleicht sie."
+        },
+        {
+          id: "erinnerungen-q5",
+          text: "Was hat dich beim ersten Treffen am meisten überrascht?",
+          typ: "freitext",
+          richtige_antwort: null,
+          feedback_richtig: "Schön! Erzählt euch davon.",
+          placeholder: "Was hast du nicht erwartet?"
+        }
+      ],
+      zufallsevents: [
+        {
+          id: "ee1",
+          text: "📸 Ein altes Erinnerungsfoto taucht auf! Beschreibt gemeinsam, was ihr darin seht.",
+          auswirkung: "harmonie+10"
+        },
+        {
+          id: "ee2",
+          text: "🎵 Mira fragt: 'Welches Lied würde eure erste gemeinsame Zeit beschreiben?'",
+          auswirkung: "harmonie+5"
+        }
+      ]
+    },
+
+    {
+      id: "zukunft",
+      name: "Kapitel 2 — Zukunft",
+      hybridame_id: "nova",
+      video: "videos/zukunft.mp4",
+      video_poster: "images/zukunft-poster.jpg",
+      einleitungstext: "Nova öffnet das Fenster in eure gemeinsame Zukunft. Schaut euch an, bevor das Video beginnt.",
+      fragen: [
+        {
+          id: "zukunft-q1",
+          text: "Wo seht ihr euch in 5 Jahren gemeinsam?",
+          typ: "multiple_choice",
+          optionen: ["In einer neuen Stadt", "Im Traumhaus", "Auf Reisen", "Genau hier, aber tiefer"],
+          richtige_antwort: null,
+          feedback_richtig: "Habt ihr dasselbe geantwortet? Redet darüber!"
+        },
+        {
+          id: "zukunft-q2",
+          text: "Wie wichtig sind gemeinsame Träume für eure Beziehung?",
+          typ: "regler",
+          min: 1, max: 10,
+          min_label: "🌱 nicht so sehr",
+          max_label: "🚀 absolut zentral",
+          richtige_antwort: null,
+          feedback_richtig: "Merkt euch eure Werte."
+        },
+        {
+          id: "zukunft-q3",
+          text: "Wenn ihr einen Ort der Welt bereisen könntet — nur einer — welcher wäre das?",
+          typ: "freitext",
+          richtige_antwort: null,
+          feedback_richtig: "Tragt das in euer Traumtagebuch ein!",
+          placeholder: "Ein Ort, ein Traum..."
+        },
+        {
+          id: "zukunft-q4",
+          text: "Habt ihr dasselbe Reiseziel genannt?",
+          typ: "ja_nein",
+          richtige_antwort: null,
+          feedback_richtig: "Schöner Moment — ob Ja oder Nein!"
+        },
+        {
+          id: "zukunft-q5",
+          text: "Was ist euer gemeinsamer Wunsch für dieses Jahr?",
+          typ: "freitext",
+          richtige_antwort: null,
+          feedback_richtig: "Speichert diesen Wunsch als Erinnerung.",
+          placeholder: "Ein Wunsch, gemeinsam formuliert..."
+        }
+      ],
+      zufallsevents: [
+        {
+          id: "ze1",
+          text: "⭐ Nova zeigt euch eine leere Seite: 'Schreibt gemeinsam drei Sätze über eure Zukunft.'",
+          auswirkung: "harmonie+15"
+        },
+        {
+          id: "ze2",
+          text: "🗺️ Eine Weltkarte erscheint! Zeigt gleichzeitig auf den Ort, zu dem ihr wollt.",
+          auswirkung: "harmonie+10"
+        }
+      ]
+    },
+
+    {
+      id: "konflikte",
+      name: "Kapitel 3 — Konflikte",
+      hybridame_id: "aion",
+      video: "videos/konflikte.mp4",
+      video_poster: "images/konflikte-poster.jpg",
+      einleitungstext: "Aion begleitet euch durch das Schwierigste: ehrliche Fragen über Konflikte und Wachstum.",
+      fragen: [
+        {
+          id: "konflikte-q1",
+          text: "Was ist eure häufigste Art zu streiten?",
+          typ: "multiple_choice",
+          optionen: ["Schweigen", "Zu laut reden", "Ablenken", "Direkt ansprechen"],
+          richtige_antwort: null,
+          feedback_richtig: "Das ist wichtig zu wissen. Vergleicht eure Antworten."
+        },
+        {
+          id: "konflikte-q2",
+          text: "Wie lange brauchst du nach einem Streit, um wieder offen zu sein?",
+          typ: "regler",
+          min: 1, max: 10,
+          min_label: "⚡ sofort",
+          max_label: "🐢 mehrere Tage",
+          richtige_antwort: null,
+          feedback_richtig: "Merkt euch den Unterschied zwischen euren Werten."
+        },
+        {
+          id: "konflikte-q3",
+          text: "Gibt es etwas, das du dir nach Konflikten mehr wünschen würdest?",
+          typ: "freitext",
+          richtige_antwort: null,
+          feedback_richtig: "Das ist ein Geschenk aneinander.",
+          placeholder: "Was würdest du dir wünschen..."
+        },
+        {
+          id: "konflikte-q4",
+          text: "Habt ihr eine ungeschriebene Versöhnungs-Regel?",
+          typ: "ja_nein",
+          richtige_antwort: null,
+          feedback_richtig: "Falls nicht — erfindet jetzt eine!"
+        },
+        {
+          id: "konflikte-q5",
+          text: "Was hat euch ein Konflikt gelehrt, den ihr nicht vergessen werdet?",
+          typ: "freitext",
+          richtige_antwort: null,
+          feedback_richtig: "Aus Konflikten wächst man. Danke für die Ehrlichkeit.",
+          placeholder: "Eine Lektion aus einem schwierigen Moment..."
+        }
+      ],
+      zufallsevents: [
+        {
+          id: "ke1",
+          text: "🕊️ Aion fragt: 'Nennt je eine Sache, für die ihr euch beim anderen entschuldigen wollt. Jetzt. Hier.'",
+          auswirkung: "harmonie+20"
+        },
+        {
+          id: "ke2",
+          text: "💌 Ein Brief erscheint: Schreibt je einen Satz, den ihr dem anderen sagen wolltet, aber nicht konntet.",
+          auswirkung: "harmonie+15"
+        }
+      ]
+    },
+
+    {
+      id: "vertrauen",
+      name: "Kapitel 4 — Vertrauen",
+      hybridame_id: "vera",
+      video: "videos/vertrauen.mp4",
+      video_poster: "images/vertrauen-poster.jpg",
+      einleitungstext: "Vera hält den sichersten Raum für euch. Hier könnt ihr ehrlich sein.",
+      fragen: [
+        {
+          id: "vertrauen-q1",
+          text: "Auf einer Skala: Wie sicher fühlst du dich in dieser Beziehung?",
+          typ: "regler",
+          min: 1, max: 10,
+          min_label: "😟 unsicher",
+          max_label: "🏠 völlig sicher",
+          richtige_antwort: null,
+          feedback_richtig: "Das ist ein Geschenk der Ehrlichkeit."
+        },
+        {
+          id: "vertrauen-q2",
+          text: "Was stärkt dein Vertrauen am meisten?",
+          typ: "multiple_choice",
+          optionen: ["Verlässlichkeit", "Offene Kommunikation", "Physische Nähe", "Gemeinsame Zeit"],
+          richtige_antwort: null,
+          feedback_richtig: "Merkt euch gegenseitig eure Antworten."
+        },
+        {
+          id: "vertrauen-q3",
+          text: "Gibt es etwas, das du [NAME_PARTNER] noch nie gesagt hast?",
+          typ: "ja_nein",
+          richtige_antwort: null,
+          feedback_richtig: "Falls Ja — vielleicht ist jetzt der Moment."
+        },
+        {
+          id: "vertrauen-q4",
+          text: "Was bedeutet 'Vertrauen' für dich in einem Satz?",
+          typ: "freitext",
+          richtige_antwort: null,
+          feedback_richtig: "Lest euch gegenseitig eure Definitionen vor.",
+          placeholder: "Vertrauen bedeutet für mich..."
+        },
+        {
+          id: "vertrauen-q5",
+          text: "Hat sich dein Vertrauen in [NAME_PARTNER] über die Zeit vertieft?",
+          typ: "regler",
+          min: 1, max: 10,
+          min_label: "📉 kaum verändert",
+          max_label: "📈 sehr gewachsen",
+          richtige_antwort: null,
+          feedback_richtig: "Das ist die Geschichte eurer Beziehung."
+        }
+      ],
+      zufallsevents: [
+        {
+          id: "ve1",
+          text: "🤲 Vera bittet euch: Haltet euch an den Händen und sagt dem anderen drei Dinge, die ihr an ihm liebt.",
+          auswirkung: "harmonie+25"
+        },
+        {
+          id: "ve2",
+          text: "🔐 Ein Geheimnis-Raum öffnet sich: Erzählt euch je eine Sache, die ihr noch nie geteilt habt.",
+          auswirkung: "harmonie+20"
+        }
+      ]
+    },
+
+    {
+      id: "traeume",
+      name: "Kapitel 5 — Träume",
+      hybridame_id: "sonja",
+      video: "videos/traeume.mp4",
+      video_poster: "images/traeume-poster.jpg",
+      einleitungstext: "Sonja bewahrt eure tiefsten Träume. Schaut das Video im Dunkeln, wenn möglich.",
+      fragen: [
+        {
+          id: "traeume-q1",
+          text: "Was ist dein größter persönlicher Traum — für dich allein?",
+          typ: "freitext",
+          richtige_antwort: null,
+          feedback_richtig: "Danke. Das ist kostbar.",
+          placeholder: "Ein Traum, der ganz meiner ist..."
+        },
+        {
+          id: "traeume-q2",
+          text: "Unterstützt du [NAME_PARTNER] bei seinen/ihren persönlichen Träumen?",
+          typ: "regler",
+          min: 1, max: 10,
+          min_label: "🌱 könnte mehr sein",
+          max_label: "🦅 voll und ganz",
+          richtige_antwort: null,
+          feedback_richtig: "Redet über die Unterschiede."
+        },
+        {
+          id: "traeume-q3",
+          text: "Welchen gemeinsamen Traum habt ihr noch nicht in Angriff genommen?",
+          typ: "multiple_choice",
+          optionen: ["Eine große Reise", "Ein eigenes Zuhause", "Etwas zusammen gründen", "Mehr gemeinsame Zeit"],
+          richtige_antwort: null,
+          feedback_richtig: "Wann fangt ihr damit an?"
+        },
+        {
+          id: "traeume-q4",
+          text: "Gibt es einen Traum, den du aufgegeben hast? (Nur wenn du möchtest)",
+          typ: "ja_nein",
+          richtige_antwort: null,
+          feedback_richtig: "Manche Träume verwandeln sich. Redet darüber, wenn ihr mögt."
+        },
+        {
+          id: "traeume-q5",
+          text: "Formuliert gemeinsam einen neuen Traum in einem Satz.",
+          typ: "freitext",
+          richtige_antwort: null,
+          feedback_richtig: "Das ist jetzt Teil eurer gemeinsamen Geschichte.",
+          placeholder: "Unser neuer gemeinsamer Traum ist..."
+        }
+      ],
+      zufallsevents: [
+        {
+          id: "te1",
+          text: "🌌 Sonja zeigt euch den Nachthimmel: 'Jeder sucht sich einen Stern aus. Das ist euer Traum-Stern.'",
+          auswirkung: "harmonie+15"
+        },
+        {
+          id: "te2",
+          text: "📖 Ein leeres Traumtagebuch erscheint. Schreibt je eine Seite — zusammen oder getrennt.",
+          auswirkung: "harmonie+20"
+        }
+      ]
+    }
+  ],
+
+  // ─── Globale Zufallsevents ───────────────────────────────────────────────────
+  zufallsevents_global: [
+    {
+      id: "g1",
+      name: "Altes Foto",
+      text: "📸 Ein altes Foto erscheint! Beschreibt gemeinsam, was ihr darin seht und fühlt.",
+      ausloeser: "random",
+      auswirkung: "harmonie+10"
+    },
+    {
+      id: "g2",
+      name: "Geheime Frage",
+      text: "🤫 Geheime Frage: Was wäre das erste, was du tun würdest, wenn du einen Tag alleine hättest?",
+      ausloeser: "random",
+      auswirkung: "harmonie+5"
+    },
+    {
+      id: "g3",
+      name: "Zeitkapsel",
+      text: "⏰ Zeitkapsel: Schreibt je eine Nachricht an euer zukünftiges Ich — in 10 Jahren.",
+      ausloeser: "random",
+      auswirkung: "harmonie+15"
+    },
+    {
+      id: "g4",
+      name: "Kompliment-Runde",
+      text: "💛 Sagt euch gegenseitig drei echte Komplimente — nicht die üblichen!",
+      ausloeser: "random",
+      auswirkung: "harmonie+20"
+    },
+    {
+      id: "g5",
+      name: "Songmoment",
+      text: "🎵 Welches Lied beschreibt euren aktuellen Moment zusammen? Spielt es jetzt ab.",
+      ausloeser: "random",
+      auswirkung: "harmonie+10"
+    },
+    {
+      id: "g6",
+      name: "Schweige-Minute",
+      text: "🤫 Eine Minute Stille. Schaut euch an. Keine Worte. Nur Anwesenheit.",
+      ausloeser: "random",
+      auswirkung: "harmonie+15"
+    },
+    {
+      id: "g7",
+      name: "Wunschzettel",
+      text: "✉️ Schreibt je drei Wünsche auf, die ihr euch vom anderen für diesen Monat wünscht.",
+      ausloeser: "random",
+      auswirkung: "harmonie+10"
+    },
+    {
+      id: "g8",
+      name: "Erster Gedanke",
+      text: "⚡ Schnell! Erster Gedanke: Was kommt dir bei 'wir' als erstes in den Sinn?",
+      ausloeser: "random",
+      auswirkung: "harmonie+5"
+    },
+    {
+      id: "g9",
+      name: "Dankbarkeits-Blitz",
+      text: "🙏 Nennt abwechselnd 5 Dinge, für die ihr dem anderen dankbar seid. Los!",
+      ausloeser: "random",
+      auswirkung: "harmonie+20"
+    },
+    {
+      id: "g10",
+      name: "Unsinnige Frage",
+      text: "🦄 Wenn eure Beziehung ein Tier wäre — welches und warum? Beide gleichzeitig antworten!",
+      ausloeser: "random",
+      auswirkung: "harmonie+5"
+    }
+  ],
+
+  // ─── Kommunikations-Einheit ─────────────────────────────────────────────────
+  kommunikation: {
+    hybridame_id: "kai",
+    titel: "Einheit — Kommunikation",
+    einleitung: "Kai öffnet die Brücke zwischen euch. Hier geht es darum, wie ihr miteinander sprecht — nicht nur jetzt, sondern täglich.",
+    plattformen: [
+      {
+        name: "Tägliche Sprachnachrichten",
+        beschreibung: "Jeden Abend eine kurze Sprachnachricht. Nicht schreiben — sprechen.",
+        emoji: "🎙️"
+      },
+      {
+        name: "Wöchentlicher Video-Call",
+        beschreibung: "Einmal pro Woche ein fester Termin — kein Scrollen, nur Gesichter.",
+        emoji: "📹"
+      },
+      {
+        name: "Gemeinsames Journal",
+        beschreibung: "Ein geteiltes Notizbuch (digital oder analog) für Gedanken, die zu groß für eine Nachricht sind.",
+        emoji: "📓"
+      },
+      {
+        name: "Check-in-Karte",
+        beschreibung: "Eine einfache Frage pro Woche: 'Wie geht es dir wirklich?' Ehrlich antworten.",
+        emoji: "💌"
+      }
+    ],
+    frage: {
+      text: "Welche dieser Formen der Kommunikation möchtet ihr ab sofort stärken?",
+      typ: "multiple_choice",
+      optionen: ["Sprachnachrichten", "Video-Calls", "Gemeinsames Journal", "Check-in-Karten"],
+      mehrfach: true
+    }
+  },
+
+  // ─── Regeln ─────────────────────────────────────────────────────────────────
+  regeln: [
+    "Jede Frage muss von beiden beantwortet werden, bevor es weitergeht.",
+    "Es gibt keine falschen Antworten — nur ehrliche und unehrliche.",
+    "Bei Gefühls-Fragen: Vergleicht eure Antworten und redet darüber.",
+    "Der LOVE-Button ❤️ ist immer da — für einen Neuanfang, wenn es nötig ist.",
+    "Pausen sind erlaubt. Das Spiel wartet auf euch.",
+    "Alles, was hier gesagt wird, bleibt zwischen euch."
+  ],
+
+  // ─── Video-Konzepte ─────────────────────────────────────────────────────────
+  video_konzepte: [
+    {
+      etage: "Prolog",
+      datei: "prolog.mp4",
+      inhalt: "Collage aus gemeinsamen Fotos, untermalt mit einem bedeutungsvollen Lied. Endet mit der Frage: 'Wer seid ihr füreinander?'",
+      dauer: "30-60 Sekunden",
+      tool: "CapCut, InShot oder iMovie",
+      tipps: "Nutzt eure schönsten gemeinsamen Fotos. Fangt mit dem allerersten an."
+    },
+    {
+      etage: "Erinnerungen",
+      datei: "erinnerungen.mp4",
+      inhalt: "Chronologische Slideshow der ersten gemeinsamen Monate. Vielleicht mit einer Sprachmemo.",
+      dauer: "60-90 Sekunden",
+      tool: "Google Fotos Highlights oder CapCut",
+      tipps: "Lasst die Bilder selbst sprechen. Wenig Text."
+    },
+    {
+      etage: "Zukunft",
+      datei: "zukunft.mp4",
+      inhalt: "Orte, die ihr besuchen wollt. Screenshots von Wunsch-Reisen, gezeichnete Pläne, Traumhäuser.",
+      dauer: "45-60 Sekunden",
+      tool: "Pinterest Screenshots + CapCut",
+      tipps: "Fügt handgeschriebene Notizen ein: 'Das wollen wir.'"
+    },
+    {
+      etage: "Konflikte",
+      datei: "konflikte.mp4",
+      inhalt: "Etwas Ehrliches: Ein kurzes Video, in dem ihr je einen Satz sagt, was ihr vom anderen braucht.",
+      dauer: "30-45 Sekunden",
+      tool: "Kamera-App direkt",
+      tipps: "Traut euch. Authentizität ist hier wichtiger als Qualität."
+    },
+    {
+      etage: "Vertrauen",
+      datei: "vertrauen.mp4",
+      inhalt: "Stille Bilder von Momenten, in denen ihr füreinander da wart. Ruhige Musik.",
+      dauer: "45-60 Sekunden",
+      tool: "CapCut mit Slow-Motion",
+      tipps: "Wählt Bilder, bei denen ihr both da wart — nicht Selfies, sondern Momente."
+    },
+    {
+      etage: "Träume",
+      datei: "traeume.mp4",
+      inhalt: "Nacht-Ästhetik: Sterne, dunkle ruhige Bilder, Mondphasen. Eure Traum-Liste vorgelesen.",
+      dauer: "60-90 Sekunden",
+      tool: "CapCut mit Nacht-Filter",
+      tipps: "Lest euch gegenseitig eure Traumlisten vor und filmt das."
+    }
+  ]
+};
+
+
+================================================================================
+DATEI: beziehungshybrid/index.html
+================================================================================
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f0f1a">
+  <title>Beziehungshybrid ❤️</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+
+  <!-- ─── Header ─────────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-top">
+      <h1>❤️ Beziehungshybrid</h1>
+      <div class="player-badge">
+        👤 <span id="player-badge-name">Spieler 1</span>
+      </div>
+    </div>
+    <nav class="nav" role="navigation" aria-label="Spielbereiche">
+      <button class="nav-btn active" data-section="start"
+              onclick="showSection('start')">🏠 Start</button>
+      <button class="nav-btn" data-section="regeln"
+              onclick="showSection('regeln')">📋 Regeln</button>
+      <button class="nav-btn" data-section="prolog"
+              onclick="showSection('prolog')">🌙 Prolog</button>
+      <button class="nav-btn" data-section="erinnerungen"
+              onclick="showSection('erinnerungen')">📜 Erinnerungen</button>
+      <button class="nav-btn" data-section="zukunft"
+              onclick="showSection('zukunft')">✨ Zukunft</button>
+      <button class="nav-btn" data-section="konflikte"
+              onclick="showSection('konflikte')">⚡ Konflikte</button>
+      <button class="nav-btn" data-section="vertrauen"
+              onclick="showSection('vertrauen')">🛡️ Vertrauen</button>
+      <button class="nav-btn" data-section="traeume"
+              onclick="showSection('traeume')">🌌 Träume</button>
+      <button class="nav-btn" data-section="kommunikation"
+              onclick="showSection('kommunikation')">💬 Kommunikation</button>
+      <button class="nav-btn" data-section="ende"
+              onclick="showEnde()">🏆 Ende</button>
+    </nav>
+    <div class="progress-wrap">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+  </header>
+
+  <!-- ─── LOVE-Button ───────────────────────────────────────────────────── -->
+  <button class="love-btn" onclick="loveBtnClicked()" aria-label="LOVE Button">❤️</button>
+
+  <!-- ─── Toast ─────────────────────────────────────────────────────────── -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- ─── Haupt-Inhalt ──────────────────────────────────────────────────── -->
+  <main class="main" role="main">
+
+    <!-- START ──────────────────────────────────────────────────────────── -->
+    <section class="section active" id="sec-start" aria-label="Startseite">
+      <div class="start-hero">
+        <span class="hero-emoji">💑</span>
+        <h2>Willkommen</h2>
+        <p>Eine Reise für zwei — durch Erinnerungen, Träume und alles dazwischen.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Wer spielt mit?</div>
+        <p class="card-subtitle">Gebt eure Namen ein — oder lasst die Platzhalter stehen.</p>
+        <div class="name-inputs">
+          <div class="name-input-group">
+            <label for="input-name1">Spieler 1</label>
+            <input class="name-input" id="input-name1"
+                   type="text" placeholder="Dein Name" maxlength="20"
+                   autocomplete="off" autocorrect="off">
+          </div>
+          <div class="name-input-group">
+            <label for="input-name2">Spieler 2</label>
+            <input class="name-input" id="input-name2"
+                   type="text" placeholder="Ihr Name" maxlength="20"
+                   autocomplete="off" autocorrect="off">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="startGame()">
+          🚀 Reise beginnen
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Was erwartet euch?</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+          <div style="display:flex;gap:12px;align-items:center">
+            <span style="font-size:24px">🌙</span>
+            <div>
+              <strong>7 Etagen</strong>
+              <div class="text-muted">Prolog → Erinnerungen → Zukunft → Konflikte → Vertrauen → Träume → Ende</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <span style="font-size:24px">❓</span>
+            <div>
+              <strong>30+ Fragen</strong>
+              <div class="text-muted">Ehrlich, emotional, überraschend</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <span style="font-size:24px">🎲</span>
+            <div>
+              <strong>Zufallsevents</strong>
+              <div class="text-muted">Momente, die ihr nicht erwartet</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <span style="font-size:24px">❤️</span>
+            <div>
+              <strong>LOVE-Button</strong>
+              <div class="text-muted">Immer da — für Pausen und Neuanfänge</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REGELN ─────────────────────────────────────────────────────────── -->
+    <section class="section" id="sec-regeln" aria-label="Spielregeln">
+      <div class="card">
+        <div class="card-title">📋 Die Regeln</div>
+        <p class="card-subtitle">Lest sie gemeinsam durch, bevor es losgeht.</p>
+        <ul class="regeln-list" id="regeln-list"></ul>
+      </div>
+      <button class="btn btn-primary" onclick="showSection('prolog')">
+        Los geht's! ➜
+      </button>
+    </section>
+
+    <!-- PROLOG ─────────────────────────────────────────────────────────── -->
+    <section class="section" id="sec-prolog" aria-label="Prolog"></section>
+
+    <!-- ERINNERUNGEN ───────────────────────────────────────────────────── -->
+    <section class="section" id="sec-erinnerungen" aria-label="Kapitel Erinnerungen"></section>
+
+    <!-- ZUKUNFT ────────────────────────────────────────────────────────── -->
+    <section class="section" id="sec-zukunft" aria-label="Kapitel Zukunft"></section>
+
+    <!-- KONFLIKTE ──────────────────────────────────────────────────────── -->
+    <section class="section" id="sec-konflikte" aria-label="Kapitel Konflikte"></section>
+
+    <!-- VERTRAUEN ──────────────────────────────────────────────────────── -->
+    <section class="section" id="sec-vertrauen" aria-label="Kapitel Vertrauen"></section>
+
+    <!-- TRÄUME ─────────────────────────────────────────────────────────── -->
+    <section class="section" id="sec-traeume" aria-label="Kapitel Träume"></section>
+
+    <!-- KOMMUNIKATION ──────────────────────────────────────────────────── -->
+    <section class="section" id="sec-kommunikation" aria-label="Einheit Kommunikation"></section>
+
+    <!-- ENDE ───────────────────────────────────────────────────────────── -->
+    <section class="section" id="sec-ende" aria-label="Abschluss"></section>
+
+  </main>
+
+  <!-- ─── Zufallsevent-Overlay ──────────────────────────────────────────── -->
+  <div class="event-overlay" id="event-overlay" role="dialog" aria-modal="true">
+    <div class="event-card">
+      <div class="event-icon" id="event-icon">🎲</div>
+      <h3 id="event-name">Zufallsevent</h3>
+      <p id="event-text">Ein besonderer Moment wartet auf euch.</p>
+      <div class="event-auswirkung" id="event-auswirkung">✨</div>
+      <button class="btn btn-primary" onclick="closeEvent()">
+        ✅ Verstanden!
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── LOVE-Overlay ──────────────────────────────────────────────────── -->
+  <div class="love-overlay" id="love-overlay" role="dialog" aria-modal="true">
+    <div class="love-icon">❤️</div>
+    <h2>Ich bin da.</h2>
+    <p>Egal was gerade passiert — ihr habt euch. Das ist das Wichtigste.</p>
+    <button class="btn btn-primary" style="max-width:280px"
+            onclick="closeLove('pause')">
+      ⏸️ Kurze Pause
+    </button>
+    <button class="btn btn-ghost mt-12" style="max-width:280px;color:white;border-color:rgba(255,255,255,0.3)"
+            onclick="closeLove('neustart')">
+      🔄 Neuanfang
+    </button>
+    <button class="btn btn-ghost mt-12" style="max-width:280px;color:white;border-color:rgba(255,255,255,0.3)"
+            onclick="closeLove('close')">
+      ✕ Schließen
+    </button>
+  </div>
+
+  <!-- ─── Scripts ───────────────────────────────────────────────────────── -->
+  <script src="daten.js"></script>
+  <script src="script.js"></script>
+  <script>
+    // Regeln dynamisch befüllen
+    document.addEventListener('DOMContentLoaded', () => {
+      const list = document.getElementById('regeln-list');
+      if (list && GAME_DATA.regeln) {
+        list.innerHTML = GAME_DATA.regeln.map((r, i) => `
+          <li>
+            <span class="regel-num">${i + 1}</span>
+            <span>${r}</span>
+          </li>`).join('');
+      }
+
+      // Player-Badge init
+      const badge = document.querySelector('#player-badge-name');
+      if (badge) badge.id = 'player-badge'; // normalize id
+    });
+  </script>
+</body>
+</html>
+
+
+================================================================================
+DATEI: beziehungshybrid/styles.css
+================================================================================
+
+/* BEZIEHUNGSHYBRID — Styles */
+/* Touch-optimiert, responsiv, emotional */
+
+/* ─── CSS-Variablen ──────────────────────────────────────────────────────────*/
+:root {
+  --primary:      #6e48aa;
+  --primary-dark: #4a2f7a;
+  --secondary:    #9d50bb;
+  --success:      #27ae60;
+  --danger:       #e74c3c;
+  --warning:      #f39c12;
+  --love:         #e84393;
+  --bg:           #0f0f1a;
+  --bg-card:      #1a1a2e;
+  --bg-card2:     #16213e;
+  --text:         #f0f0f0;
+  --text-muted:   #9a9ab0;
+  --border:       rgba(255,255,255,0.1);
+  --shadow:       0 8px 32px rgba(0,0,0,0.4);
+  --radius:       16px;
+  --radius-sm:    8px;
+  --touch-target: 48px;
+  --font:         'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* ─── Reset & Base ────────────────────────────────────────────────────────────*/
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  padding-bottom: 100px;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────────*/
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(15, 15, 26, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.header h1 {
+  font-size: 18px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #a78bfa, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.player-badge {
+  background: rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.player-badge span { color: var(--text); font-weight: 600; }
+
+/* Navigation */
+.nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.nav::-webkit-scrollbar { display: none; }
+
+.nav-btn {
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  min-height: var(--touch-target);
+  display: flex;
+  align-items: center;
+}
+.nav-btn:hover, .nav-btn.active {
+  background: rgba(110, 72, 170, 0.3);
+  border-color: var(--primary);
+  color: var(--text);
+}
+
+/* ─── Fortschrittsbalken ─────────────────────────────────────────────────────*/
+.progress-wrap {
+  height: 3px;
+  background: rgba(255,255,255,0.1);
+}
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--love));
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 0%;
+}
+
+/* ─── LOVE Button ────────────────────────────────────────────────────────────*/
+.love-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 20px;
+  z-index: 200;
+  background: linear-gradient(135deg, #e84393, #ff6b9d);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  font-size: 26px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(232, 67, 147, 0.5);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.love-btn:active { transform: scale(0.9); }
+.love-btn:hover  { transform: scale(1.1); box-shadow: 0 6px 28px rgba(232,67,147,0.7); }
+
+/* ─── Haupt-Container ────────────────────────────────────────────────────────*/
+.main {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* ─── Sections ───────────────────────────────────────────────────────────────*/
+.section { display: none; animation: fadeIn 0.4s ease; }
+.section.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Cards ──────────────────────────────────────────────────────────────────*/
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+
+.card-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.card-subtitle {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+/* ─── Hybridame ──────────────────────────────────────────────────────────────*/
+.hybridame-card {
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.hybridame-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+}
+.hybridame-card > * { position: relative; }
+
+.hybridame-emoji {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.hybridame-name {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.hybridame-rolle {
+  font-size: 13px;
+  opacity: 0.75;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.hybridame-quote {
+  font-size: 16px;
+  line-height: 1.6;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+/* ─── Video ──────────────────────────────────────────────────────────────────*/
+.video-wrap {
+  position: relative;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: #000;
+  margin-bottom: 16px;
+}
+
+.video-wrap video {
+  width: 100%;
+  display: block;
+  max-height: 300px;
+  object-fit: cover;
+}
+
+.video-placeholder {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: linear-gradient(135deg, #1a1a2e, #2d2d4e);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: center;
+  padding: 20px;
+  gap: 8px;
+}
+.video-placeholder .icon { font-size: 36px; }
+
+/* ─── Frage-Modul ────────────────────────────────────────────────────────────*/
+.frage-block {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 18px;
+  margin-bottom: 14px;
+  background: var(--bg-card2);
+}
+
+.frage-text {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.frage-num {
+  color: var(--text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+/* Freitext */
+.frage-input {
+  width: 100%;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: var(--font);
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color 0.2s;
+}
+.frage-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: rgba(110,72,170,0.1);
+}
+.frage-input::placeholder { color: var(--text-muted); }
+
+/* Regler */
+.regler-wrap { margin: 8px 0 16px; }
+
+.regler-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(110,72,170,0.6);
+  transition: transform 0.1s;
+}
+input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.2); }
+input[type="range"]::-moz-range-thumb {
+  width: 28px; height: 28px;
+  background: var(--primary); border: none; border-radius: 50%; cursor: pointer;
+}
+
+.regler-value {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--primary);
+  margin-top: 10px;
+}
+
+/* Multiple Choice */
+.mc-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.mc-option {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  font-size: 15px;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+  min-height: var(--touch-target);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mc-option:hover { background: rgba(110,72,170,0.2); border-color: var(--primary); }
+.mc-option.selected {
+  background: rgba(110,72,170,0.35);
+  border-color: var(--primary);
+  color: #c4a8ff;
+}
+.mc-option .mc-letter {
+  width: 28px; height: 28px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+.mc-option.selected .mc-letter { background: var(--primary); }
+
+/* Ja/Nein */
+.ja-nein-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.ja-btn, .nein-btn {
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--text);
+}
+.ja-btn:hover  { background: rgba(39,174,96,0.2);  border-color: var(--success); color: #6bff9e; }
+.nein-btn:hover{ background: rgba(231,76,60,0.2);   border-color: var(--danger);  color: #ff9090; }
+.ja-btn.selected  { background: rgba(39,174,96,0.3);  border-color: var(--success); }
+.nein-btn.selected{ background: rgba(231,76,60,0.3);  border-color: var(--danger); }
+
+/* ─── Feedback ───────────────────────────────────────────────────────────────*/
+.feedback {
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 14px;
+  margin-top: 10px;
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+.feedback.show   { display: block; }
+.feedback.correct{ background: rgba(39,174,96,0.2); border: 1px solid var(--success); color: #6bff9e; }
+.feedback.wrong  { background: rgba(231,76,60,0.2); border: 1px solid var(--danger); color: #ff9090; }
+.feedback.info   { background: rgba(110,72,170,0.2); border: 1px solid var(--primary); color: #c4a8ff; }
+
+/* ─── Buttons ────────────────────────────────────────────────────────────────*/
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 16px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  min-height: var(--touch-target);
+  transition: all 0.2s;
+  margin-top: 12px;
+}
+.btn:active { transform: scale(0.98); }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  box-shadow: 0 4px 16px rgba(110,72,170,0.4);
+}
+.btn-primary:hover { box-shadow: 0 6px 24px rgba(110,72,170,0.6); }
+
+.btn-success {
+  background: linear-gradient(135deg, #1e8449, var(--success));
+  color: white;
+  box-shadow: 0 4px 16px rgba(39,174,96,0.3);
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+.btn-ghost:hover { border-color: var(--primary); color: var(--text); }
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ─── Spieler-Indikator ──────────────────────────────────────────────────────*/
+.spieler-indikator {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.spieler-chip {
+  flex: 1;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  border: 2px solid transparent;
+  transition: all 0.3s;
+}
+
+.spieler-chip.aktiv {
+  border-color: var(--primary);
+  background: rgba(110,72,170,0.2);
+}
+.spieler-chip.inaktiv {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-muted);
+}
+
+/* ─── Start-Seite ────────────────────────────────────────────────────────────*/
+.start-hero {
+  text-align: center;
+  padding: 32px 16px 24px;
+}
+
+.start-hero .hero-emoji {
+  font-size: 64px;
+  display: block;
+  margin-bottom: 16px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+.start-hero h2 {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #a78bfa, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.start-hero p {
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1.6;
+  max-width: 320px;
+  margin: 0 auto 24px;
+}
+
+/* Name-Eingabe */
+.name-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.name-input-group label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.name-input {
+  width: 100%;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 12px;
+  font-size: 15px;
+  font-family: var(--font);
+}
+.name-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+/* ─── Regeln ─────────────────────────────────────────────────────────────────*/
+.regeln-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.regeln-list li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+  background: var(--bg-card2);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.regeln-list .regel-num {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
+}
+
+/* ─── Zufallsevent ────────────────────────────────────────────────────────────*/
+.event-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(8px);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.event-overlay.show { display: flex; }
+
+.event-card {
+  background: linear-gradient(135deg, #1a1a2e, #2d1b4e);
+  border: 1px solid rgba(110,72,170,0.5);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 20px 60px rgba(110,72,170,0.4);
+}
+
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.event-card .event-icon { font-size: 48px; margin-bottom: 16px; }
+.event-card h3 { font-size: 20px; margin-bottom: 12px; }
+.event-card p  { color: var(--text-muted); font-size: 15px; line-height: 1.6; margin-bottom: 8px; }
+.event-card .event-auswirkung {
+  display: inline-block;
+  background: rgba(39,174,96,0.2);
+  border: 1px solid var(--success);
+  color: #6bff9e;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+/* ─── LOVE-Overlay ───────────────────────────────────────────────────────────*/
+.love-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(232,67,147,0.95), rgba(110,72,170,0.95));
+  z-index: 600;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  text-align: center;
+}
+.love-overlay.show { display: flex; flex-direction: column; }
+
+.love-overlay .love-icon { font-size: 80px; margin-bottom: 24px; animation: heartbeat 1s infinite; }
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.love-overlay h2 { font-size: 32px; margin-bottom: 16px; }
+.love-overlay p  { font-size: 18px; opacity: 0.9; line-height: 1.6; max-width: 300px; margin: 0 auto 32px; }
+
+/* ─── Statistiken ────────────────────────────────────────────────────────────*/
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  text-align: center;
+}
+
+.stat-card .stat-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+.stat-card .stat-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.harmonie-bar {
+  height: 12px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.harmonie-fill {
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--danger), var(--warning), var(--success));
+  transition: width 1s ease;
+}
+
+/* ─── Kommunikation ──────────────────────────────────────────────────────────*/
+.plattform-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.plattform-item {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  background: var(--bg-card2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.plattform-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+  width: 48px;
+  text-align: center;
+}
+
+.plattform-info h4 { font-size: 15px; margin-bottom: 4px; }
+.plattform-info p  { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+
+/* ─── Ende ───────────────────────────────────────────────────────────────────*/
+.ende-hero {
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.ende-hero .confetti { font-size: 48px; margin-bottom: 16px; }
+.ende-hero h2 { font-size: 26px; font-weight: 800; margin-bottom: 12px; }
+.ende-hero p  { color: var(--text-muted); font-size: 16px; line-height: 1.7; }
+
+/* ─── Antwort-Vergleich ──────────────────────────────────────────────────────*/
+.vergleich-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.vergleich-item {
+  background: var(--bg-card2);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-size: 13px;
+}
+
+.vergleich-item .spieler-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.vergleich-item .spieler-antwort {
+  font-size: 15px;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+/* ─── Toast ──────────────────────────────────────────────────────────────────*/
+.toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: #1a1a2e;
+  border: 1px solid var(--primary);
+  border-radius: 24px;
+  padding: 10px 20px;
+  font-size: 14px;
+  color: var(--text);
+  z-index: 300;
+  opacity: 0;
+  transition: all 0.3s;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ─── Utility ────────────────────────────────────────────────────────────────*/
+.mt-12 { margin-top: 12px; }
+.mt-20 { margin-top: 20px; }
+.mb-0  { margin-bottom: 0; }
+.text-center { text-align: center; }
+.text-muted  { color: var(--text-muted); font-size: 14px; }
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 20px 0;
+}
+
+/* ─── Scrollbalken ───────────────────────────────────────────────────────────*/
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(110,72,170,0.4); border-radius: 2px; }
+
+
+================================================================================
+DATEI: beziehungshybrid/script.js
+================================================================================
+
+// BEZIEHUNGSHYBRID — Spiellogik
+'use strict';
+
+// ─── Spielzustand ─────────────────────────────────────────────────────────────
+const State = {
+  currentSection: 'start',
+  currentPlayer: 1,
+  spieler1: { name: 'Spieler 1', antworten: {} },
+  spieler2: { name: 'Spieler 2', antworten: {} },
+  progress: 0,
+  harmonie: 50,
+  firedEvents: new Set(),
+  completedEtagen: new Set(),
+  phase: 'spieler1',   // 'spieler1' | 'spieler2' | 'vergleich'
+  currentFrageIndex: 0,
+  currentEtage: null,
+  sessionId: Date.now().toString(36)
+};
+
+// Etagen-Reihenfolge für Fortschritt
+const SECTION_ORDER = [
+  'start', 'regeln', 'prolog',
+  'erinnerungen', 'zukunft', 'konflikte', 'vertrauen', 'traeume',
+  'kommunikation', 'ende'
+];
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadSavedState();
+  showSection('start');
+  setupRandomEventTimer();
+  buildUI();
+});
+
+function buildUI() {
+  buildEtagen();
+  buildKommunikation();
+  buildEnde();
+}
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('sec-' + id);
+  if (el) {
+    el.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  State.currentSection = id;
+  updateProgress();
+  updatePlayerBadge();
+  highlightNav(id);
+}
+
+function highlightNav(id) {
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.section === id);
+  });
+}
+
+// ─── Fortschritt ──────────────────────────────────────────────────────────────
+function updateProgress() {
+  const idx = SECTION_ORDER.indexOf(State.currentSection);
+  const pct = idx < 0 ? 0 : Math.round((idx / (SECTION_ORDER.length - 1)) * 100);
+  State.progress = pct;
+  const bar = document.getElementById('progress-bar');
+  if (bar) bar.style.width = pct + '%';
+}
+
+// ─── Spieler-Badge ────────────────────────────────────────────────────────────
+function updatePlayerBadge() {
+  const badge = document.getElementById('player-badge');
+  if (!badge) return;
+  const name = State.phase === 'spieler2'
+    ? State.spieler2.name
+    : State.spieler1.name;
+  badge.querySelector('span').textContent = name;
+}
+
+// ─── Spiel starten ────────────────────────────────────────────────────────────
+function startGame() {
+  const n1 = document.getElementById('input-name1')?.value.trim();
+  const n2 = document.getElementById('input-name2')?.value.trim();
+  if (n1) State.spieler1.name = n1;
+  if (n2) State.spieler2.name = n2;
+  GAME_DATA.config.spieler1_name = State.spieler1.name;
+  GAME_DATA.config.spieler2_name = State.spieler2.name;
+  saveState();
+  updatePlayerBadge();
+  showSection('regeln');
+  showToast('Willkommen, ' + State.spieler1.name + ' & ' + State.spieler2.name + '! ❤️');
+}
+
+// ─── UI dynamisch bauen ───────────────────────────────────────────────────────
+function buildEtagen() {
+  GAME_DATA.etagen.forEach((etage, etageIdx) => {
+    const sec = document.getElementById('sec-' + etage.id);
+    if (!sec) return;
+
+    const hybridame = GAME_DATA.hybridamen.find(h => h.id === etage.hybridame_id);
+    let html = '';
+
+    // Hybridame-Card
+    if (hybridame) {
+      html += `
+        <div class="hybridame-card" style="background: ${hybridame.hintergrund}">
+          <span class="hybridame-emoji">${hybridame.emoji}</span>
+          <div class="hybridame-name">${hybridame.name}</div>
+          <div class="hybridame-rolle">${hybridame.rolle}</div>
+          <div class="hybridame-quote">"${hybridame.beispielsatz}"</div>
+        </div>`;
+    }
+
+    // Einleitungstext
+    html += `<div class="card">
+      <div class="card-title">${etage.name}</div>
+      <p class="card-subtitle">${etage.einleitungstext}</p>`;
+
+    // Video
+    html += buildVideoBlock(etage);
+
+    html += `</div>`;
+
+    // Fragen (beide Spieler nacheinander)
+    html += buildFragenBlock(etage, etageIdx);
+
+    // Weiter-Button (anfangs versteckt)
+    html += `
+      <button class="btn btn-success" id="weiter-${etage.id}" style="display:none"
+              onclick="weiterZuNaechster('${etage.id}')">
+        Weiter ➜
+      </button>`;
+
+    sec.innerHTML = html;
+    initRegler(etage.id);
+  });
+}
+
+function buildVideoBlock(etage) {
+  const hasVideo = etage.video && etage.video !== '';
+  if (hasVideo) {
+    return `
+      <div class="video-wrap">
+        <video controls preload="none" poster="${etage.video_poster || ''}">
+          <source src="${etage.video}" type="video/mp4">
+          Euer Browser unterstützt kein Video.
+        </video>
+      </div>`;
+  }
+  return `
+    <div class="video-wrap">
+      <div class="video-placeholder">
+        <span class="icon">🎬</span>
+        <strong>Hier kommt euer Video hin</strong>
+        <small>Datei: <code>${etage.video || 'video.mp4'}</code></small>
+      </div>
+    </div>`;
+}
+
+function buildFragenBlock(etage, etageIdx) {
+  let html = `<div id="fragen-block-${etage.id}">`;
+
+  // Spieler-1-Phase
+  html += `<div id="phase-s1-${etage.id}" class="card">
+    <div class="spieler-indikator">
+      <div class="spieler-chip aktiv" id="chip-s1-${etage.id}">
+        👤 <span id="name-s1-${etage.id}">Spieler 1</span>
+      </div>
+      <div class="spieler-chip inaktiv" id="chip-s2-${etage.id}">
+        👤 <span id="name-s2-${etage.id}">Spieler 2</span>
+      </div>
+    </div>`;
+
+  etage.fragen.forEach((frage, i) => {
+    html += buildFrageHTML(frage, i, etage.id, 1);
+  });
+
+  html += `
+    <button class="btn btn-primary" id="btn-s1-${etage.id}"
+            onclick="abschliessen('${etage.id}', 1)">
+      ✅ ${State.spieler1.name || 'Spieler 1'} ist fertig
+    </button>
+  </div>`;
+
+  // Spieler-2-Phase (erst sichtbar nach S1)
+  html += `<div id="phase-s2-${etage.id}" class="card" style="display:none">
+    <div class="spieler-indikator">
+      <div class="spieler-chip inaktiv" id="chip-s1b-${etage.id}">
+        👤 <span>${State.spieler1.name || 'Spieler 1'}</span> ✓
+      </div>
+      <div class="spieler-chip aktiv" id="chip-s2b-${etage.id}">
+        👤 <span id="name-s2b-${etage.id}">Spieler 2</span>
+      </div>
+    </div>
+    <p class="text-muted text-center mt-12 mb-0">
+      📵 Gerät an ${State.spieler2.name || 'Spieler 2'} weitergeben!
+    </p>
+    <hr class="divider">`;
+
+  etage.fragen.forEach((frage, i) => {
+    html += buildFrageHTML(frage, i, etage.id, 2);
+  });
+
+  html += `
+    <button class="btn btn-primary" id="btn-s2-${etage.id}"
+            onclick="abschliessen('${etage.id}', 2)">
+      ✅ ${State.spieler2.name || 'Spieler 2'} ist fertig
+    </button>
+  </div>`;
+
+  // Vergleich (erst sichtbar nach S2)
+  html += `<div id="phase-vergleich-${etage.id}" class="card" style="display:none">
+    <div class="card-title">🔍 Vergleicht eure Antworten</div>
+    <div id="vergleich-inhalt-${etage.id}"></div>
+  </div>`;
+
+  html += `</div>`;
+  return html;
+}
+
+function buildFrageHTML(frage, i, etageId, spielerNr) {
+  const prefix = `${etageId}-s${spielerNr}-q${i}`;
+  const letters = ['A','B','C','D'];
+  let html = `
+    <div class="frage-block" id="frage-${prefix}">
+      <div class="frage-num">Frage ${i + 1}</div>
+      <div class="frage-text">${replacePlaceholder(frage.text)}</div>`;
+
+  switch (frage.typ) {
+    case 'freitext':
+      html += `<textarea class="frage-input" id="input-${prefix}"
+                 placeholder="${frage.placeholder || 'Deine Antwort...'}"></textarea>`;
+      break;
+
+    case 'regler':
+      html += `
+        <div class="regler-wrap">
+          <div class="regler-labels">
+            <span>${frage.min_label}</span>
+            <span>${frage.max_label}</span>
+          </div>
+          <input type="range" id="input-${prefix}"
+                 min="${frage.min}" max="${frage.max}" value="${Math.round((frage.min + frage.max) / 2)}"
+                 oninput="updateReglerVal(this, '${prefix}')">
+          <div class="regler-value" id="val-${prefix}">
+            ${Math.round((frage.min + frage.max) / 2)}/${frage.max}
+          </div>
+        </div>`;
+      break;
+
+    case 'multiple_choice':
+      html += `<div class="mc-options">`;
+      frage.optionen.forEach((opt, oi) => {
+        html += `
+          <button class="mc-option" id="mc-${prefix}-${oi}"
+                  onclick="selectMC('${prefix}', ${oi}, this)">
+            <span class="mc-letter">${letters[oi]}</span>
+            ${opt}
+          </button>`;
+      });
+      html += `</div>
+      <input type="hidden" id="input-${prefix}" value="">`;
+      break;
+
+    case 'ja_nein':
+      html += `
+        <div class="ja-nein-wrap">
+          <button class="ja-btn" id="ja-${prefix}"
+                  onclick="selectJaNein('${prefix}', 'Ja', this)">
+            ✅ Ja
+          </button>
+          <button class="nein-btn" id="nein-${prefix}"
+                  onclick="selectJaNein('${prefix}', 'Nein', this)">
+            ❌ Nein
+          </button>
+        </div>
+        <input type="hidden" id="input-${prefix}" value="">`;
+      break;
+  }
+
+  // Feedback
+  if (frage.feedback_richtig) {
+    html += `<div class="feedback info" id="fb-${prefix}">${frage.feedback_richtig}</div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+function buildKommunikation() {
+  const k = GAME_DATA.kommunikation;
+  const sec = document.getElementById('sec-kommunikation');
+  if (!sec) return;
+
+  const hm = GAME_DATA.hybridamen.find(h => h.id === k.hybridame_id);
+  let html = '';
+
+  if (hm) {
+    html += `
+      <div class="hybridame-card" style="background: ${hm.hintergrund}">
+        <span class="hybridame-emoji">${hm.emoji}</span>
+        <div class="hybridame-name">${hm.name}</div>
+        <div class="hybridame-rolle">${hm.rolle}</div>
+        <div class="hybridame-quote">"${hm.beispielsatz}"</div>
+      </div>`;
+  }
+
+  html += `<div class="card">
+    <div class="card-title">${k.titel}</div>
+    <p class="card-subtitle">${k.einleitung}</p>
+    <div class="plattform-list">`;
+
+  k.plattformen.forEach(p => {
+    html += `
+      <div class="plattform-item">
+        <div class="plattform-icon">${p.emoji}</div>
+        <div class="plattform-info">
+          <h4>${p.name}</h4>
+          <p>${p.beschreibung}</p>
+        </div>
+      </div>`;
+  });
+
+  html += `</div></div>`;
+
+  // Frage
+  html += `<div class="card">
+    <div class="frage-text">${k.frage.text}</div>
+    <div class="mc-options">`;
+
+  k.frage.optionen.forEach((opt, i) => {
+    html += `
+      <button class="mc-option" onclick="toggleKommMC(this)">
+        <span class="mc-letter">${['A','B','C','D'][i]}</span> ${opt}
+      </button>`;
+  });
+
+  html += `</div>
+    <button class="btn btn-success mt-12" onclick="showSection('traeume')">
+      Zum letzten Kapitel ➜
+    </button>
+  </div>`;
+
+  sec.innerHTML = html;
+}
+
+function buildEnde() {
+  const sec = document.getElementById('sec-ende');
+  if (!sec) return;
+
+  sec.innerHTML = `
+    <div class="ende-hero">
+      <div class="confetti">🎉</div>
+      <h2>Ihr habt es geschafft!</h2>
+      <p>Das war eure Reise. Jetzt beginnt der echte Teil.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Eure Statistiken</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-harmonie">50</div>
+          <div class="stat-label">Harmonie %</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-etagen">0</div>
+          <div class="stat-label">Kapitel</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-antworten">0</div>
+          <div class="stat-label">Antworten</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-events">0</div>
+          <div class="stat-label">Zufallsevents</div>
+        </div>
+      </div>
+      <div class="harmonie-bar">
+        <div class="harmonie-fill" id="harmonie-fill" style="width:50%"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">💌 Eure Antworten</div>
+      <div id="alle-antworten"></div>
+    </div>
+    <button class="btn btn-primary" onclick="exportAntworten()">
+      📤 Antworten exportieren
+    </button>
+    <button class="btn btn-ghost mt-12" onclick="neuStarten()">
+      🔄 Neu starten
+    </button>`;
+}
+
+// ─── Interaktion ──────────────────────────────────────────────────────────────
+function updateReglerVal(el, prefix) {
+  const valEl = document.getElementById('val-' + prefix);
+  const max = el.getAttribute('max') || 10;
+  if (valEl) valEl.textContent = el.value + '/' + max;
+}
+
+function selectMC(prefix, idx, btn) {
+  // Deselektiere alle Optionen in dieser Gruppe
+  const allBtns = btn.closest('.mc-options').querySelectorAll('.mc-option');
+  allBtns.forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const inp = document.getElementById('input-' + prefix);
+  if (inp) inp.value = btn.textContent.trim();
+
+  // Feedback anzeigen
+  const fb = document.getElementById('fb-' + prefix);
+  if (fb) fb.classList.add('show');
+}
+
+function selectJaNein(prefix, val, btn) {
+  const wrap = btn.closest('.ja-nein-wrap');
+  wrap.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const inp = document.getElementById('input-' + prefix);
+  if (inp) inp.value = val;
+
+  const fb = document.getElementById('fb-' + prefix);
+  if (fb) fb.classList.add('show');
+}
+
+function toggleKommMC(btn) {
+  btn.classList.toggle('selected');
+}
+
+// ─── Spieler abschließen ──────────────────────────────────────────────────────
+function abschliessen(etageId, spielerNr) {
+  const etage = GAME_DATA.etagen.find(e => e.id === etageId);
+  if (!etage) return;
+
+  // Antworten sammeln
+  const antworten = {};
+  etage.fragen.forEach((frage, i) => {
+    const prefix = `${etageId}-s${spielerNr}-q${i}`;
+    const inp = document.getElementById('input-' + prefix);
+    antworten[frage.id] = inp ? inp.value : '';
+  });
+
+  if (spielerNr === 1) {
+    State.spieler1.antworten[etageId] = antworten;
+    // Spieler-2-Phase zeigen
+    document.getElementById(`phase-s1-${etageId}`).style.display = 'none';
+    document.getElementById(`phase-s2-${etageId}`).style.display = 'block';
+    // Namen aktualisieren
+    const n = document.getElementById(`name-s2b-${etageId}`);
+    if (n) n.textContent = State.spieler2.name;
+    State.phase = 'spieler2';
+    updatePlayerBadge();
+    showToast('🎉 ' + State.spieler1.name + ' fertig! Jetzt ' + State.spieler2.name + '!');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    State.spieler2.antworten[etageId] = antworten;
+    // Beide fertig → Vergleich
+    document.getElementById(`phase-s2-${etageId}`).style.display = 'none';
+    document.getElementById(`phase-vergleich-${etageId}`).style.display = 'block';
+    showVergleich(etageId);
+    State.completedEtagen.add(etageId);
+    State.phase = 'spieler1';
+    updatePlayerBadge();
+    saveState();
+
+    // Weiter-Button einblenden
+    const weiter = document.getElementById('weiter-' + etageId);
+    if (weiter) weiter.style.display = 'flex';
+
+    // Zufallsevent?
+    if (Math.random() < 0.4) triggerRandomEvent(etage.zufallsevents);
+  }
+}
+
+function showVergleich(etageId) {
+  const etage = GAME_DATA.etagen.find(e => e.id === etageId);
+  const container = document.getElementById(`vergleich-inhalt-${etageId}`);
+  if (!etage || !container) return;
+
+  let html = '';
+  etage.fragen.forEach((frage, i) => {
+    const a1 = State.spieler1.antworten[etageId]?.[frage.id] || '—';
+    const a2 = State.spieler2.antworten[etageId]?.[frage.id] || '—';
+    const gleich = a1.toLowerCase() === a2.toLowerCase() && a1 !== '—';
+
+    html += `
+      <div style="margin-bottom:14px">
+        <div class="frage-num" style="margin-bottom:6px">${gleich ? '✅' : '💬'} Frage ${i + 1}</div>
+        <div style="font-size:14px;margin-bottom:8px;color:var(--text-muted)">${frage.text}</div>
+        <div class="vergleich-wrap">
+          <div class="vergleich-item">
+            <div class="spieler-label">${State.spieler1.name}</div>
+            <div class="spieler-antwort">${formatAntwort(frage, a1)}</div>
+          </div>
+          <div class="vergleich-item">
+            <div class="spieler-label">${State.spieler2.name}</div>
+            <div class="spieler-antwort">${formatAntwort(frage, a2)}</div>
+          </div>
+        </div>
+        ${gleich ? '<div class="feedback correct show">🎉 Ihr habt gleich geantwortet!</div>' : ''}
+      </div>`;
+
+    if (gleich) {
+      State.harmonie = Math.min(100, State.harmonie + 5);
+    }
+  });
+
+  container.innerHTML = html;
+}
+
+function formatAntwort(frage, val) {
+  if (frage.typ === 'regler') return `${val}/${frage.max}`;
+  return val || '—';
+}
+
+// ─── Weiter-Navigation ────────────────────────────────────────────────────────
+function weiterZuNaechster(etageId) {
+  const idx = GAME_DATA.etagen.findIndex(e => e.id === etageId);
+  if (idx < GAME_DATA.etagen.length - 1) {
+    showSection(GAME_DATA.etagen[idx + 1].id);
+  } else {
+    showSection('kommunikation');
+  }
+}
+
+// ─── Zufallsevents ────────────────────────────────────────────────────────────
+function triggerRandomEvent(localEvents) {
+  // Kombiniere lokale + globale Events, wähle ein noch nicht getriggertes
+  const alle = [...(localEvents || []), ...GAME_DATA.zufallsevents_global];
+  const unused = alle.filter(e => !State.firedEvents.has(e.id));
+  if (unused.length === 0) return;
+
+  const event = unused[Math.floor(Math.random() * unused.length)];
+  State.firedEvents.add(event.id);
+
+  // Harmonie-Bonus
+  const bonus = parseInt((event.auswirkung || '').replace('harmonie+', '')) || 0;
+  if (bonus > 0) State.harmonie = Math.min(100, State.harmonie + bonus);
+
+  // Overlay anzeigen
+  const overlay = document.getElementById('event-overlay');
+  document.getElementById('event-icon').textContent = event.text.match(/^[^\s]+/)?.[0] || '🎲';
+  document.getElementById('event-name').textContent = event.name || 'Zufallsevent';
+  document.getElementById('event-text').textContent = event.text.replace(/^[^\s]+\s/, '');
+  document.getElementById('event-auswirkung').textContent = bonus > 0 ? `+${bonus}% Harmonie` : '✨';
+  overlay.classList.add('show');
+  saveState();
+}
+
+function closeEvent() {
+  document.getElementById('event-overlay').classList.remove('show');
+}
+
+function setupRandomEventTimer() {
+  // Alle 5 Minuten zufälliges globales Event
+  setInterval(() => {
+    if (State.currentSection !== 'start' && State.currentSection !== 'ende') {
+      if (Math.random() < 0.3) triggerRandomEvent([]);
+    }
+  }, 5 * 60 * 1000);
+}
+
+// ─── LOVE-Button ──────────────────────────────────────────────────────────────
+function loveBtnClicked() {
+  const overlay = document.getElementById('love-overlay');
+  overlay.classList.add('show');
+}
+
+function closeLove(action) {
+  document.getElementById('love-overlay').classList.remove('show');
+  if (action === 'pause') {
+    showToast('⏸️ Pause. Ihr könnt jederzeit weitermachen.');
+  } else if (action === 'neustart') {
+    neuStarten();
+  }
+}
+
+function neuStarten() {
+  if (!confirm('Wirklich neu starten? Alle Antworten gehen verloren.')) return;
+  localStorage.removeItem('beziehungshybrid_state');
+  location.reload();
+}
+
+// ─── Regler initialisieren ────────────────────────────────────────────────────
+function initRegler(etageId) {
+  const etage = GAME_DATA.etagen.find(e => e.id === etageId);
+  if (!etage) return;
+  etage.fragen.forEach((frage, i) => {
+    if (frage.typ === 'regler') {
+      [1, 2].forEach(spielerNr => {
+        const prefix = `${etageId}-s${spielerNr}-q${i}`;
+        const el = document.getElementById('input-' + prefix);
+        if (el) updateReglerVal(el, prefix);
+      });
+    }
+  });
+}
+
+// ─── Spielernamen aktualisieren ───────────────────────────────────────────────
+function updateNamen() {
+  document.querySelectorAll('[id^="name-s1-"]').forEach(el => {
+    el.textContent = State.spieler1.name;
+  });
+  document.querySelectorAll('[id^="name-s2-"]').forEach(el => {
+    el.textContent = State.spieler2.name;
+  });
+  document.querySelectorAll('[id^="btn-s1-"]').forEach(el => {
+    el.textContent = '✅ ' + State.spieler1.name + ' ist fertig';
+  });
+  document.querySelectorAll('[id^="btn-s2-"]').forEach(el => {
+    el.textContent = '✅ ' + State.spieler2.name + ' ist fertig';
+  });
+}
+
+// ─── Platzhalter ersetzen ─────────────────────────────────────────────────────
+function replacePlaceholder(text) {
+  if (!text) return '';
+  return text
+    .replace(/\[NAME_PARTNER\]/g, State.spieler2.name || 'deinem Partner')
+    .replace(/\[NAME_1\]/g, State.spieler1.name)
+    .replace(/\[NAME_2\]/g, State.spieler2.name)
+    .replace(/\[ORT\]/g, GAME_DATA.config.erster_ort)
+    .replace(/\[DATUM\]/g, GAME_DATA.config.beginn_datum);
+}
+
+// ─── Ende & Statistiken ───────────────────────────────────────────────────────
+function showEnde() {
+  showSection('ende');
+  updateStats();
+  buildAlleAntworten();
+}
+
+function updateStats() {
+  const totalAntworten = Object.values(State.spieler1.antworten)
+    .reduce((sum, obj) => sum + Object.keys(obj).length, 0);
+
+  document.getElementById('stat-harmonie').textContent = State.harmonie;
+  document.getElementById('stat-etagen').textContent = State.completedEtagen.size;
+  document.getElementById('stat-antworten').textContent = totalAntworten * 2;
+  document.getElementById('stat-events').textContent = State.firedEvents.size;
+  document.getElementById('harmonie-fill').style.width = State.harmonie + '%';
+}
+
+function buildAlleAntworten() {
+  const container = document.getElementById('alle-antworten');
+  if (!container) return;
+
+  let html = '';
+  GAME_DATA.etagen.forEach(etage => {
+    if (!State.spieler1.antworten[etage.id]) return;
+    html += `<div style="margin-bottom:16px">
+      <div class="frage-num">${etage.name}</div>`;
+    etage.fragen.forEach(frage => {
+      const a1 = State.spieler1.antworten[etage.id]?.[frage.id] || '—';
+      const a2 = State.spieler2.antworten[etage.id]?.[frage.id] || '—';
+      html += `
+        <div style="font-size:13px;color:var(--text-muted);margin:8px 0 4px">${frage.text}</div>
+        <div class="vergleich-wrap">
+          <div class="vergleich-item">
+            <div class="spieler-label">${State.spieler1.name}</div>
+            <div class="spieler-antwort" style="font-size:13px">${a1}</div>
+          </div>
+          <div class="vergleich-item">
+            <div class="spieler-label">${State.spieler2.name}</div>
+            <div class="spieler-antwort" style="font-size:13px">${a2}</div>
+          </div>
+        </div>`;
+    });
+    html += `</div>`;
+  });
+
+  container.innerHTML = html || '<p class="text-muted">Noch keine Antworten.</p>';
+}
+
+function exportAntworten() {
+  const data = {
+    datum: new Date().toLocaleDateString('de-DE'),
+    spieler1: State.spieler1.name,
+    spieler2: State.spieler2.name,
+    harmonie: State.harmonie + '%',
+    antworten: {
+      [State.spieler1.name]: State.spieler1.antworten,
+      [State.spieler2.name]: State.spieler2.antworten
+    }
+  };
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `beziehungshybrid-${data.datum.replace(/\./g, '-')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📥 Exportiert!');
+}
+
+// ─── Sprachsteuerung (optional) ──────────────────────────────────────────────
+function startSpeech(inputId) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showToast('Sprachsteuerung nicht verfügbar'); return; }
+
+  const rec = new SR();
+  rec.lang = 'de-DE';
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
+
+  rec.onresult = e => {
+    const el = document.getElementById(inputId);
+    if (el) el.value = e.results[0][0].transcript;
+  };
+
+  rec.onerror = () => showToast('Spracherkennung fehlgeschlagen');
+  rec.start();
+  showToast('🎙️ Höre zu...');
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg, duration = 2500) {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
+}
+
+// ─── State persistieren ───────────────────────────────────────────────────────
+function saveState() {
+  const toSave = {
+    spieler1: State.spieler1,
+    spieler2: State.spieler2,
+    harmonie: State.harmonie,
+    completedEtagen: [...State.completedEtagen],
+    firedEvents: [...State.firedEvents]
+  };
+  try {
+    localStorage.setItem('beziehungshybrid_state', JSON.stringify(toSave));
+  } catch (e) { /* localStorage nicht verfügbar */ }
+}
+
+function loadSavedState() {
+  try {
+    const saved = localStorage.getItem('beziehungshybrid_state');
+    if (!saved) return;
+    const data = JSON.parse(saved);
+    if (data.spieler1) State.spieler1 = data.spieler1;
+    if (data.spieler2) State.spieler2 = data.spieler2;
+    if (data.harmonie) State.harmonie = data.harmonie;
+    if (data.completedEtagen) State.completedEtagen = new Set(data.completedEtagen);
+    if (data.firedEvents) State.firedEvents = new Set(data.firedEvents);
+  } catch (e) { /* ignorieren */ }
+}
+
+
+================================================================================
+DATEI: beziehungshybrid/service-worker.js
+================================================================================
+
+// BEZIEHUNGSHYBRID — Service Worker (PWA Offline)
+const CACHE = 'beziehungshybrid-v1';
+
+const PRECACHE = [
+  '/',
+  '/index.html',
+  '/styles.css',
+  '/script.js',
+  '/daten.js'
+];
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll(PRECACHE))
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(response => {
+        if (!response || response.status !== 200) return response;
+        const clone = response.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return response;
+      }).catch(() => cached);
+    })
+  );
+});
+
+
+================================================================================
+DATEI: beziehungshybrid/manifest.json
+================================================================================
+
+{
+  "name": "Beziehungshybrid",
+  "short_name": "❤️ Hybrid",
+  "description": "Ein interaktives Beziehungsspiel für zwei",
+  "start_url": "/beziehungshybrid/index.html",
+  "display": "standalone",
+  "background_color": "#0f0f1a",
+  "theme_color": "#6e48aa",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+
+
+================================================================================
+DATEI: src/server/SocketManager.ts
+================================================================================
+
+import { WebSocket } from "ws";
+import { wsLogger } from "./logger.js";
+import { ClientMessage, ServerMessage } from "../shared/messages.js";
+
+export class SocketManager {
+    static sockets: Map<string, WebSocket> = new Map();
+
+    static addSocket(socket: WebSocket) {
+        let clientId: string = SocketManager.generateClientId();
+        let existingSocket: WebSocket | undefined = this.sockets.get(clientId);
+        if (existingSocket) {
+            existingSocket.close(1000, "replaced by new connection");
+        }
+        SocketManager.sockets.set(clientId, socket);
+        SocketManager.setupEventListeners(clientId, socket);
+        SocketManager.sendWelcomeMessage(clientId, socket);
+    }
+
+    static generateClientId(): string {
+        let clientId: string = `id-${Math.round(Math.random() * 100)}`;
+        wsLogger.info(`Assigned new client ID: ${clientId}`);
+        return clientId;
+    }
+
+    static sendWelcomeMessage(clientId: string, socket: WebSocket) {
+        let welcomeMessage: ServerMessage = {
+            type: "welcome",
+            payload: {
+                clientId
+            }
+        }
+        SocketManager.sendMessage(socket, welcomeMessage);
+    }
+
+    static sendMessage(socket: WebSocket, message: ServerMessage) {
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify(message));
+            wsLogger.debug(`Server has sent message: ${JSON.stringify(message)}`);
+        } else {
+            wsLogger.error(`Server could not send message because socket is not open. Socket state: ${socket.readyState}`);
+        }
+    }
+
+    static setupEventListeners(clientId: string, socket: WebSocket) {
+        socket.on("message", (data) => {
+            let dataString: string = data.toString();
+            let message: ClientMessage = JSON.parse(dataString);
+            wsLogger.trace(`Received message: ${JSON.stringify(message)}`);
+        });
+
+        socket.on("close", (code, reason) => {
+            wsLogger.info(`Connection closed with code: ${code} and reason: ${reason.toString()}`);
+            SocketManager.removeSocket(clientId);
+        });
+
+        socket.on("error", (err) => {
+            wsLogger.error(`Socket error: ${err.message}`);
+        });
+    }
+
+    static removeSocket(clientId: string) {
+        SocketManager.sockets.delete(clientId);
+    }
+}
+
+================================================================================
+DATEI: src/server/server.ts
+================================================================================
+
+import http = require("http");
+import fs = require("fs");
+import path = require("path");
+
+import { SERVER_PORT } from "../shared/constants.js";
+import { httpLogger } from "./logger.js";
+
+export let server = http.createServer((request, response) => {
+    let url = request.url ?? "/";
+
+    if (url === "/") {
+        url = "/client/index.html";
+    }
+
+    httpLogger.debug(`Incoming request: ${url}`);
+
+    let clientPath = path.resolve("dist/client");
+    let filePath = path.join(clientPath, url);
+
+    fs.readFile(filePath, (error, data) => {
+        if (error) {
+            httpLogger.error(`Could not read file: ${filePath}`);
+            response.writeHead(404);
+            response.end("File not found");
+            return;
+        }
+
+        let extension = path.extname(filePath);
+
+        let contentType = "text/plain";
+
+        switch (extension) {
+            case ".html":
+                contentType = "text/html";
+                break;
+
+            case ".js":
+                contentType = "application/javascript";
+                break;
+
+            case ".css":
+                contentType = "text/css";
+                break;
+        }
+
+        response.writeHead(200, { "Content-Type": contentType });
+        response.end(data);
+
+        httpLogger.debug(`Served: ${filePath}`);
+    });
+});
+
+server.listen(SERVER_PORT, () => {
+    httpLogger.info(`Server running on port ${SERVER_PORT}`);
+});
+
+================================================================================
+DATEI: src/server/wss.ts
+================================================================================
+
+import { server } from "./server.js";
+import { WebSocketServer } from "ws";
+
+export let wss = new WebSocketServer({ server });
+
+
+================================================================================
+DATEI: src/shared/messages.ts
+================================================================================
+
+import { Direction } from "./Direction.js";
+import { InputState } from "./InputState.js";
+
+export type ClientMessage =
+    | {
+        type: "input",
+        payload: {
+            input: InputState;
+        }
+    };
+
+export type ServerMessage =
+    | {
+        type: "welcome";
+        payload: {
+            clientId: string;
+        };
+    }
+    | {
+        type: "death";
+        payload: {
+            clientId: string;
+        };
+    };
+
+================================================================================
+DATEI: package.json
+================================================================================
+
+{
+  "name": "newgame",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:client": "npx tsc -p tsconfig.client.json  && cp src/client/index.html dist/client/client/index.html",
+    "build:server": "npx tsc -p tsconfig.server.json",
+    "start:server": "node dist/server/server/index.js"
+  },
+  "type": "module",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^25.7.0",
+    "@types/ws": "^8.18.1",
+    "pino-pretty": "^13.1.3",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "pino": "^10.3.1",
+    "ws": "^8.20.1"
+  }
+}
+
+
+================================================================================
+  ENDE DES DOKUMENTS
+  Zeilen gesamt: 4530
+  Größe: 152K
+================================================================================
