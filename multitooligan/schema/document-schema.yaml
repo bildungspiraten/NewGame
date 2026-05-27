@@ -1,0 +1,33 @@
+# MULTITOOLIGAN – Dokumenten- / Artefakt-Schema
+
+document:
+  id: ""                    # DOC-001, DOC-002, ...
+  type: ""                  # brief | screenshot | sprachmemo | notiz | tagebuch | foto | pdf | kalender | entwurf | reflexion | chat-export
+  title: ""
+  date: ""                  # ISO oder Zeitraum
+  author: ""                # Pseudonym
+  recipient: ""             # falls zutreffend
+  medium: ""                # WhatsApp | E-Mail | Brief (handschriftlich) | Dokument | Audio
+  file_path: ""             # lokaler Dateipfad oder Beschreibung
+  summary: ""               # sachliche Zusammenfassung des Inhalts
+  key_points: []            # wichtigste Punkte als Liste
+  quotes: []                # relevante Zitate (klar als Zitat markiert)
+  tags: []
+  related_events: []
+  related_clusters: []
+  status: ""                # original | entwurf | gesendet | nicht-gesendet | archiviert
+  notes: ""
+  priority: ""              # hoch | mittel | niedrig
+  sensitive: false          # enthält besonders sensible Informationen?
+
+# ── Chat-Export Spezialfelder ──────────────────────────────────────────────────
+chat_export:
+  platform: ""              # WhatsApp | Signal | SMS | E-Mail
+  date_range: ""            # von - bis
+  participants: []
+  total_messages: 0
+  key_segments: []          # wichtige Gesprächsabschnitte mit Datum und Thema
+  patterns_observed: []     # beobachtete Muster (OHNE Diagnose)
+  agreements_mentioned: []  # darin enthaltene Vereinbarungen
+  unanswered_questions: []  # unbeantwortete Fragen darin
+  escalation_points: []     # Punkte, an denen die Kommunikation schwieriger wurde

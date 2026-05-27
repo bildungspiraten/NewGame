@@ -1,0 +1,95 @@
+# MULTITOOLIGAN – App-Modul Schema
+
+app_module:
+  id: ""                    # MOD-TIMELINE, MOD-REFLECT, etc.
+  name: ""
+  purpose: ""               # Was leistet dieses Modul?
+  ui_concept: ""            # Beschreibung der Oberfläche
+  inputs: []                # Was gibt der Nutzer ein?
+  outputs: []               # Was gibt das Modul aus?
+  storage: ""               # localStorage | IndexedDB | JSON-Datei | keine
+  privacy_level: ""         # lokal | exportierbar | nie senden
+  risks: []                 # mögliche Risiken oder Missbrauchspotenziale
+  data_schema: {}           # YAML/JSON-Struktur der gespeicherten Daten
+  offline_capable: true
+  export_formats: []        # JSON | PDF | Markdown | CSV
+  notes: ""
+
+# ── Vordefinierte Module ──────────────────────────────────────────────────────
+modules_catalog:
+
+  - id: MOD-TIMELINE
+    name: Timeline / Ereignislog
+    purpose: Chronologische Übersicht aller relevanten Ereignisse
+    ui_concept: Vertikale Timeline mit Filterfunktion nach Typ und Zeitraum
+    inputs: [Datum, Titel, Beschreibung, Typ, Tags, Beteiligte]
+    outputs: [gefilterte Timeline, Export JSON/PDF]
+    storage: localStorage
+    offline_capable: true
+    export_formats: [JSON, PDF, Markdown]
+
+  - id: MOD-CLUSTER
+    name: Themencluster / Mindmap
+    purpose: Überblick über Themenbereiche und ihre Verbindungen
+    ui_concept: Mindmap oder Kanban-Board mit Clusterkarten
+    inputs: [Thema, Unterpunkte, Verbindungen]
+    outputs: [Cluster-Übersicht, Verbindungsdiagramm]
+    storage: localStorage
+    offline_capable: true
+
+  - id: MOD-REFLECT
+    name: Reflexionsmodus
+    purpose: Strukturierte Selbstreflexion ohne Selbstabwertung
+    ui_concept: Geführte Fragen, freies Textfeld, Stimmungs-Marker
+    inputs: [Freitextantworten, Datum]
+    outputs: [Reflexionsjournal, Muster-Zusammenfassung]
+    storage: localStorage
+    privacy_level: lokal
+
+  - id: MOD-GESPRAECH
+    name: Gesprächsvorbereitung
+    purpose: Strukturierte Vorbereitung auf schwierige Gespräche
+    ui_concept: Karten mit offenen Fragen, Grenzen, Bedürfnissen, Trigger-Hinweisen
+    inputs: [Gesprächsthema, Punkte, Grenzen, Bedürfnisse]
+    outputs: [Gesprächsleitfaden als Karten/PDF]
+    storage: localStorage
+    offline_capable: true
+
+  - id: MOD-DOKUMENTE
+    name: Dokumentenablage
+    purpose: Strukturierte Ablage von Artefakten (lokal, keine Cloud)
+    ui_concept: Datei-Index mit Tags, Priorität, Zeitbezug
+    inputs: [Metadaten zu Dokumenten, Pfade, Zusammenfassungen]
+    outputs: [Dokumentenindex, Querverweise]
+    storage: localStorage
+    privacy_level: lokal
+
+  - id: MOD-CHAT
+    name: Kommunikationsanalyse
+    purpose: Muster in Chatverläufen sichtbar machen
+    ui_concept: Strukturierte Karten aus Chat-Exporten, Markierungen
+    inputs: [Chat-Export, Segment-Auswahl]
+    outputs: [Muster-Übersicht, Vereinbarungs-Extrakte]
+    privacy_level: lokal
+    risks:
+      - Fehlinterpretation ohne Kontext
+      - Aus dem Zusammenhang gerissene Aussagen
+
+  - id: MOD-NOTFALL
+    name: Notfall- / Selbstschutzmodus
+    purpose: Schnellzugriff auf beruhigende Strukturen und klare Grenzen
+    ui_concept: Minimales Overlay mit vorbereiteten Karten
+    inputs: [keine – nur lesen]
+    outputs: [Beruhigungskarten, klare Grenzen, nächste Schritte]
+    storage: keine (statisch)
+    offline_capable: true
+
+  - id: MOD-EXPORT
+    name: Export / Bericht
+    purpose: Vollständige oder gefilterte Datenexporte
+    ui_concept: Export-Assistent mit Filter und Format-Wahl
+    inputs: [Datumsfilter, Kategorie-Filter, Format]
+    outputs: [JSON, PDF, Markdown, CSV]
+    privacy_level: exportierbar
+    risks:
+      - Daten in falsche Hände geraten

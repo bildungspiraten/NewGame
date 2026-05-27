@@ -1,0 +1,45 @@
+# MULTITOOLIGAN – Event / Timeline Schema
+# Jedes Ereignis folgt dieser Struktur.
+# Felder ohne bekannte Information leer lassen oder mit "?" markieren.
+
+event:
+  id: ""                          # eindeutige ID, z. B. EVT-001
+  type: ""                        # event | observation | quote | reflection | question | agreement | escalation | de-escalation | contact-break | hope-phase
+  date: ""                        # ISO-Datum: 2024-03-15 oder Zeitraum: 2024-03
+  time: ""                        # optional: HH:MM
+  title: ""                       # kurze Überschrift (max 60 Zeichen)
+  description: ""                 # sachliche Beschreibung des Ereignisses
+  participants: []                # beteiligte Personen (Pseudonyme erlaubt)
+  location: ""                    # Ort oder Medium (WhatsApp, persönlich, Brief, ...)
+  context: ""                     # Was lief vorher? Was war der Hintergrund?
+  impact: ""                      # Beobachtete Auswirkungen
+  open_questions: []              # Was ist noch unklar?
+  related_events: []              # IDs anderer Ereignisse (Ursache/Folge)
+  related_documents: []           # IDs von Dokumenten/Artefakten
+  tags: []                        # aus tag-system.json
+  certainty: ""                   # sicher | wahrscheinlich | vermutung | unklar
+  source: ""                      # WhatsApp-Verlauf | Erinnerung | Dokument | ...
+  cluster: ""                     # Verweis auf Themencluster-ID
+  priority: ""                    # hoch | mittel | niedrig
+  color_code: ""                  # timeline | conflict | agreement | hope | break
+
+# ── Beispiel ──────────────────────────────────────────────────────────────────
+# event:
+#   id: EVT-001
+#   type: agreement
+#   date: "2024-06-10"
+#   title: "Vereinbarung über Kommunikationszeiten"
+#   description: "Es wurde besprochen, dass wichtige Themen nur zwischen 18 und 21 Uhr per Anruf besprochen werden."
+#   participants: [Person-A, Person-B]
+#   location: persönlich
+#   context: "Nach einem längeren Schweigen wurde ein Klärungsgespräch vereinbart."
+#   impact: "Für zwei Wochen eingehalten."
+#   open_questions:
+#     - Warum wurde die Vereinbarung danach nicht mehr eingehalten?
+#   related_events: [EVT-003]
+#   tags: [vereinbarung, kommunikation, grenze]
+#   certainty: sicher
+#   source: Erinnerung + WhatsApp-Bestätigung
+#   cluster: CLU-KOMMUNIKATION
+#   priority: hoch
+#   color_code: agreement

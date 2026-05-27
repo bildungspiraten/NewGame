@@ -1,0 +1,105 @@
+# MULTITOOLIGAN – Themencluster Schema
+
+cluster:
+  id: ""                          # CLU-KOMMUNIKATION, CLU-WOHNEN, etc.
+  name: ""                        # Anzeigename
+  description: ""                 # Was fällt in dieses Cluster?
+  color: ""                       # Farbe für visuelle Darstellung
+  subtopics: []                   # Unterthemen als Liste
+  related_events: []              # IDs zugehöriger Ereignisse
+  related_documents: []           # IDs zugehöriger Dokumente
+  related_clusters: []            # Verbindungen zu anderen Clustern
+  patterns: []                    # beobachtete Muster in diesem Bereich
+  open_points: []                 # ungeklärte Punkte
+  notes: ""                       # freie Notizen
+
+# ── Vordefinierte Cluster ──────────────────────────────────────────────────────
+clusters_catalog:
+
+  - id: CLU-KOMMUNIKATION
+    name: Kommunikation
+    color: "#4A7B8C"
+    subtopics:
+      - Gesprächsversuche
+      - Missverständnisse
+      - unbeantwortete Fragen
+      - Sprachmemos
+      - Briefe
+      - Themenwechsel
+      - Widersprüche
+      - Wiederholungen
+
+  - id: CLU-VEREINBARUNGEN
+    name: Vereinbarungen
+    color: "#4AC87A"
+    subtopics:
+      - getroffene Vereinbarungen
+      - eingehaltene Vereinbarungen
+      - gebrochene Vereinbarungen
+      - Kontextbedingungen
+      - Erinnerungen daran
+
+  - id: CLU-GRENZEN
+    name: Grenzen
+    color: "#C86C6C"
+    subtopics:
+      - gesetzte Grenzen
+      - übergangene Grenzen
+      - nicht kommunizierte Grenzen
+      - Reaktionen auf Grenzen
+
+  - id: CLU-WOHNSITUATION
+    name: Wohnsituation
+    color: "#8C7A4A"
+    subtopics:
+      - aktuelle Situation
+      - geplante Änderungen
+      - Konflikte darüber
+      - organisatorische Punkte
+
+  - id: CLU-EMOTIONEN
+    name: Emotionale Dynamiken
+    color: "#A06CC8"
+    subtopics:
+      - Hoffnungsphasen
+      - Rückzüge
+      - Eskalationen
+      - Erschöpfung
+      - Verbindungsmomente
+
+  - id: CLU-KONFLIKT
+    name: Konflikte & Eskalation
+    color: "#C84A4A"
+    subtopics:
+      - Auslöser
+      - Verlauf
+      - Eskalationspunkte
+      - Deeskalationsversuche
+      - Folgen
+
+  - id: CLU-SELBSTREFLEXION
+    name: Selbstreflexion
+    color: "#D4A96A"
+    subtopics:
+      - eigene Muster
+      - Relativierungen
+      - weggeklassene Kontexte
+      - zurückgestellte Bedürfnisse
+
+  - id: CLU-APP
+    name: App & Tool-Ideen
+    color: "#6CB4D4"
+    subtopics:
+      - Konzepte
+      - Module
+      - Datenstrukturen
+      - UI-Ideen
+
+  - id: CLU-ORGANISATION
+    name: Organisatorisches
+    color: "#808080"
+    subtopics:
+      - Termine
+      - Absprachen
+      - Zuständigkeiten
+      - offene To-dos

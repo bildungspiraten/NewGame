@@ -1,0 +1,65 @@
+{
+  "_comment": "MULTITOOLIGAN – Tag-System. Jedes Event, Dokument und Cluster kann mehrere Tags haben.",
+  "categories": {
+    "ereignis_typ": {
+      "label": "Ereignis-Typ",
+      "tags": [
+        { "id": "vereinbarung", "label": "Vereinbarung", "color": "#4AC87A" },
+        { "id": "konflikt", "label": "Konflikt", "color": "#C84A4A" },
+        { "id": "eskalation", "label": "Eskalation", "color": "#C84A4A" },
+        { "id": "deeskalation", "label": "Deeskalation", "color": "#4AC87A" },
+        { "id": "kontaktabbruch", "label": "Kontaktabbruch", "color": "#808080" },
+        { "id": "hoffnungsphase", "label": "Hoffnungsphase", "color": "#D4A96A" },
+        { "id": "klaerungsversuch", "label": "Klärungsversuch", "color": "#6CB4D4" },
+        { "id": "rueckzug", "label": "Rückzug", "color": "#A06CC8" },
+        { "id": "organisatorisch", "label": "Organisatorisch", "color": "#808080" }
+      ]
+    },
+    "kommunikation": {
+      "label": "Kommunikation",
+      "tags": [
+        { "id": "whatsapp", "label": "WhatsApp", "color": "#4AC87A" },
+        { "id": "brief", "label": "Brief", "color": "#D4A96A" },
+        { "id": "telefonat", "label": "Telefonat", "color": "#6CB4D4" },
+        { "id": "gespraech", "label": "Persönliches Gespräch", "color": "#8C7A4A" },
+        { "id": "sprachmemo", "label": "Sprachmemo", "color": "#A06CC8" },
+        { "id": "mail", "label": "E-Mail", "color": "#4A7B8C" },
+        { "id": "kein_kontakt", "label": "Kein Kontakt", "color": "#808080" }
+      ]
+    },
+    "inhalt": {
+      "label": "Inhalt",
+      "tags": [
+        { "id": "grenze", "label": "Grenze", "color": "#C86C6C" },
+        { "id": "beduerfnis", "label": "Bedürfnis", "color": "#4A7B8C" },
+        { "id": "missverstaendnis", "label": "Missverständnis", "color": "#C8956C" },
+        { "id": "widerspruch", "label": "Widerspruch", "color": "#C84A4A" },
+        { "id": "trigger", "label": "Trigger", "color": "#C84A4A" },
+        { "id": "wohnsituation", "label": "Wohnsituation", "color": "#8C7A4A" },
+        { "id": "zukunft", "label": "Zukunftsvorstellung", "color": "#D4A96A" },
+        { "id": "vergangenheit", "label": "Vergangenheit", "color": "#A06CC8" },
+        { "id": "verantwortung", "label": "Verantwortung", "color": "#4AC87A" }
+      ]
+    },
+    "verlasslichkeit": {
+      "label": "Verlässlichkeit der Information",
+      "tags": [
+        { "id": "sicher", "label": "Sicher belegt", "color": "#4AC87A" },
+        { "id": "wahrscheinlich", "label": "Wahrscheinlich", "color": "#D4A96A" },
+        { "id": "vermutung", "label": "Vermutung", "color": "#C8956C" },
+        { "id": "unklar", "label": "Unklar", "color": "#808080" },
+        { "id": "zitat", "label": "Direktes Zitat", "color": "#6CB4D4" }
+      ]
+    },
+    "selbstreflexion": {
+      "label": "Selbstreflexion",
+      "tags": [
+        { "id": "relativiert", "label": "Habe ich relativiert", "color": "#C8956C" },
+        { "id": "weggelassen", "label": "Kontext weggelassen", "color": "#C84A4A" },
+        { "id": "beduerfnis_zurueck", "label": "Bedürfnis zurückgestellt", "color": "#A06CC8" },
+        { "id": "muster", "label": "Eigenes Muster erkannt", "color": "#D4A96A" },
+        { "id": "offen", "label": "Noch offen / unklar für mich", "color": "#808080" }
+      ]
+    }
+  }
+}

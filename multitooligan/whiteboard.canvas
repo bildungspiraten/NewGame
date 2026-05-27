@@ -1,0 +1,111 @@
+{
+  "nodes": [
+
+    { "id": "title", "type": "text", "text": "# MULTITOOLIGAN\n**Whiteboard-System**\n\nZeitstrahl · Cluster · Analyse · App · Reflexion", "x": -120, "y": -2200, "width": 340, "height": 120, "color": "3" },
+
+    { "id": "legend", "type": "text", "text": "**Legende**\n🟡 Timeline\n🔴 Konflikt\n🟢 Vereinbarung\n🔵 Analyse\n🟣 App-Konzept\n⚪ Dokument\n🟠 Reflexion", "x": 260, "y": -2200, "width": 200, "height": 150, "color": "1" },
+
+    { "id": "sec-timeline", "type": "text", "text": "# 1 · ZEITSTRAHL\nChronologische Übersicht aller Ereignisse", "x": -600, "y": -1900, "width": 1400, "height": 60, "color": "3" },
+
+    { "id": "evt-template", "type": "text", "text": "**📋 EREIGNIS-VORLAGE**\n\nID: EVT-???\nTyp: event | agreement | conflict | ...\nDatum: TT.MM.JJJJ\nTitel: ...\nBeteiligte: ...\nKontext: ...\nAuswirkung: ...\nOffene Fragen: ...\nVerlässlichkeit: sicher | vermutung | ...\nTags: ...", "x": -600, "y": -1820, "width": 320, "height": 220, "color": "3" },
+
+    { "id": "evt-example1", "type": "text", "text": "**📌 [Ereignis eintragen]**\n\nDatum: ___\nTyp: ___\nWas passierte: ___\nKontext: ___\nFolge: ___", "x": -260, "y": -1820, "width": 240, "height": 180, "color": "3" },
+
+    { "id": "evt-example2", "type": "text", "text": "**📌 [Vereinbarung]**\n\nDatum: ___\nInhalt: ___\nEingehalten: ___\nStatus: offen | eingehalten | gebrochen", "x": 0, "y": -1820, "width": 240, "height": 180, "color": "4" },
+
+    { "id": "evt-example3", "type": "text", "text": "**⚡ [Eskalation]**\n\nDatum: ___\nAuslöser: ___\nVerlauf: ___\nFolge: ___\nDeeskalationsversuch: ja | nein", "x": 260, "y": -1820, "width": 240, "height": 180, "color": "1" },
+
+    { "id": "evt-example4", "type": "text", "text": "**🔇 [Kontaktabbruch / Pause]**\n\nVon: ___\nBis: ___\nGrund: ___\nWer initiiert: ___", "x": 520, "y": -1820, "width": 240, "height": 180, "color": "6" },
+
+    { "id": "evt-example5", "type": "text", "text": "**✨ [Hoffnungsphase]**\n\nZeitraum: ___\nWas war anders: ___\nWas hat sich verändert: ___", "x": 780, "y": -1820, "width": 230, "height": 180, "color": "3" },
+
+    { "id": "sec-cluster", "type": "text", "text": "# 2 · THEMENCLUSTER", "x": -600, "y": -1540, "width": 680, "height": 50, "color": "5" },
+
+    { "id": "clu-komm", "type": "text", "text": "**💬 KOMMUNIKATION**\n\n• Gesprächsversuche\n• Missverständnisse\n• Wiederholungen\n• Widersprüche\n• Themenwechsel\n• Unbeantwortete Fragen\n\nMuster: ___\nOffene Punkte: ___", "x": -600, "y": -1470, "width": 300, "height": 200, "color": "5" },
+
+    { "id": "clu-verei", "type": "text", "text": "**📋 VEREINBARUNGEN**\n\n• Getroffene V.\n• Eingehaltene V.\n• Gebrochene V.\n• Kontextbedingungen\n\nStatus: ___\nOffene: ___", "x": -280, "y": -1470, "width": 280, "height": 200, "color": "4" },
+
+    { "id": "clu-gren", "type": "text", "text": "**🚧 GRENZEN**\n\n• Gesetzte Grenzen\n• Übergangene Grenzen\n• Nicht kommunizierte G.\n• Reaktionen\n\nMuster: ___", "x": 20, "y": -1470, "width": 260, "height": 200, "color": "1" },
+
+    { "id": "clu-wohn", "type": "text", "text": "**🏠 WOHNSITUATION**\n\n• Aktuelle Situation\n• Geplante Änderungen\n• Konflikte darüber\n• Organisatorisches\n\nStatus: ___", "x": 300, "y": -1470, "width": 260, "height": 200, "color": "2" },
+
+    { "id": "clu-emot", "type": "text", "text": "**💜 EMOTIONALE DYNAMIKEN**\n\n• Hoffnungsphasen\n• Rückzüge\n• Erschöpfung\n• Verbindungsmomente\n• Eskalationsdynamiken\n\nMuster: ___", "x": -600, "y": -1250, "width": 300, "height": 200, "color": "6" },
+
+    { "id": "clu-org", "type": "text", "text": "**📅 ORGANISATION**\n\n• Termine\n• Absprachen\n• Zuständigkeiten\n• Offene To-dos\n\nDringend: ___", "x": -280, "y": -1250, "width": 280, "height": 200, "color": "3" },
+
+    { "id": "clu-konf", "type": "text", "text": "**⚡ KONFLIKT & ESKALATION**\n\n• Auslöser\n• Eskalationspunkte\n• Deeskalationsversuche\n• Folgen\n\nMuster: ___\nOffen: ___", "x": 20, "y": -1250, "width": 260, "height": 200, "color": "1" },
+
+    { "id": "clu-refle", "type": "text", "text": "**🔍 SELBSTREFLEXION**\n\n• Eigene Muster\n• Relativierungen\n• Weggeklassene Kontexte\n• Zurückgestellte Bedürfnisse\n\nErkenntnisse: ___", "x": 300, "y": -1250, "width": 260, "height": 200, "color": "2" },
+
+    { "id": "sec-chat", "type": "text", "text": "# 3 · CHAT- / KOMMUNIKATIONSANALYSE", "x": 600, "y": -1540, "width": 680, "height": 50, "color": "5" },
+
+    { "id": "chat-guide", "type": "text", "text": "**Analyse-Anleitung**\n\n1. Chat-Export datieren\n2. Abschnitte nach Thema gliedern\n3. Für jeden Abschnitt:\n   • Was wurde besprochen?\n   • Was blieb unbeantwortet?\n   • Gab es Vereinbarungen?\n   • Eskalation? Deeskalation?\n4. Muster benennen (OHNE Diagnose)\n5. Zitate klar kennzeichnen", "x": 600, "y": -1470, "width": 300, "height": 240, "color": "5" },
+
+    { "id": "chat-pattern", "type": "text", "text": "**Muster-Karten**\n\n📍 Wiederholung: ___\n📍 Themenwechsel: ___\n📍 Abbruch: ___\n📍 Eskalationsmarker: ___\n📍 Deeskalationsversuch: ___\n📍 Unbeantwortete Frage: ___", "x": 920, "y": -1470, "width": 280, "height": 240, "color": "5" },
+
+    { "id": "chat-card1", "type": "text", "text": "**💬 Chat-Segment [leer]**\n\nDatum: ___\nThema: ___\nTyp: vereinbarung | konflikt | ...\nZusammenfassung: ___\nOffen: ___", "x": 600, "y": -1210, "width": 280, "height": 160, "color": "3" },
+
+    { "id": "chat-card2", "type": "text", "text": "**💬 Chat-Segment [leer]**\n\nDatum: ___\nThema: ___\nTyp: ___\nZusammenfassung: ___\nOffen: ___", "x": 900, "y": -1210, "width": 280, "height": 160, "color": "3" },
+
+    { "id": "sec-app", "type": "text", "text": "# 4 · APP- & TOOL-KONZEPT", "x": -600, "y": -960, "width": 680, "height": 50, "color": "6" },
+
+    { "id": "app-timeline", "type": "text", "text": "**📅 Timeline-Modul**\n\nZweck: Ereignisse chronologisch\nInput: Datum, Titel, Typ, Tags\nOutput: Gefilterte Timeline\nSpeicher: localStorage\nExport: JSON, PDF, MD", "x": -600, "y": -890, "width": 280, "height": 160, "color": "6" },
+
+    { "id": "app-reflect", "type": "text", "text": "**🔍 Reflexions-Modul**\n\nZweck: Strukturierte Selbstreflexion\nInput: Geführte Fragen + Freitext\nOutput: Reflexionsjournal\nSpeicher: lokal\nPrivat: immer", "x": -300, "y": -890, "width": 280, "height": 160, "color": "6" },
+
+    { "id": "app-gespraech", "type": "text", "text": "**💬 Gesprächs-Modul**\n\nZweck: Gesprächsvorbereitung\nInput: Thema, Grenzen, Bedürfnisse\nOutput: Leitfaden-Karten\nSpeicher: localStorage\nExport: PDF", "x": 0, "y": -890, "width": 280, "height": 160, "color": "6" },
+
+    { "id": "app-notfall", "type": "text", "text": "**🛡 Notfall-Modus**\n\nZweck: Beruhigung + Orientierung\nInput: keine (statisch)\nOutput: Karten mit klaren Grenzen\nSpeicher: keine\nOffline: immer", "x": 300, "y": -890, "width": 260, "height": 160, "color": "1" },
+
+    { "id": "app-export", "type": "text", "text": "**📤 Export-Modul**\n\nZweck: Datenexport\nInput: Filter, Format\nOutput: JSON | PDF | MD | CSV\nRisiko: Daten schützen!\nPasswortschutz: empfohlen", "x": 580, "y": -890, "width": 260, "height": 160, "color": "3" },
+
+    { "id": "sec-gespraech", "type": "text", "text": "# 5 · GESPRÄCHSLEITFADEN", "x": 600, "y": -960, "width": 680, "height": 50, "color": "2" },
+
+    { "id": "g-beduerfnis", "type": "text", "text": "**💙 Meine Bedürfnisse**\n\n• ___\n• ___\n• ___\n\n(sachlich, nicht fordernd)", "x": 600, "y": -890, "width": 220, "height": 160, "color": "5" },
+
+    { "id": "g-grenzen", "type": "text", "text": "**🚧 Meine Grenzen**\n\n• Was ich nicht akzeptiere: ___\n• Was ich brauche: ___\n• Was ich kommunizieren will: ___", "x": 840, "y": -890, "width": 220, "height": 160, "color": "1" },
+
+    { "id": "g-fragen", "type": "text", "text": "**❓ Offene Fragen**\n\n• ___\n• ___\n• ___\n\n(echt – nicht rhetorisch)", "x": 1080, "y": -890, "width": 200, "height": 160, "color": "3" },
+
+    { "id": "g-trigger", "type": "text", "text": "**⚠ Mögliche Trigger**\n\n• Was könnte eskalieren: ___\n• Meine Deeskalation: ___\n• Wenn nötig: Pause sagen", "x": 600, "y": -710, "width": 220, "height": 140, "color": "2" },
+
+    { "id": "g-formulierungen", "type": "text", "text": "**🗣 Hilfreiche Formulierungen**\n\n• Ich-Botschaften: „Ich bemerke..."\n• „Ich brauche gerade..."\n• „Das ist mir wichtig weil..."\n• Keine Vorwürfe, kein Du-immer", "x": 840, "y": -710, "width": 220, "height": 140, "color": "4" },
+
+    { "id": "g-notfallplan", "type": "text", "text": "**🛡 Wenn es eskaliert**\n\n• Pause ansagen: „Ich mache kurz Pause"\n• Gespräch vertagen\n• Raus aus dem Raum ist ok\n• Kein Gespräch unter Druck", "x": 1080, "y": -710, "width": 200, "height": 140, "color": "1" },
+
+    { "id": "sec-dokumente", "type": "text", "text": "# 6 · DOKUMENTE & ARTEFAKTE", "x": -600, "y": -440, "width": 680, "height": 50, "color": "3" },
+
+    { "id": "doc-brief", "type": "text", "text": "**✉ Brief / Textentwurf**\n\nID: DOC-???\nDatum: ___\nAn: ___\nStatus: Entwurf | Gesendet | Archiviert\nKernaussagen: ___\nReferenz zu: EVT-???", "x": -600, "y": -370, "width": 280, "height": 160, "color": "3" },
+
+    { "id": "doc-chat", "type": "text", "text": "**📱 Chat-Export**\n\nID: DOC-???\nPlattform: WhatsApp | Signal | ...\nZeitraum: ___ bis ___\nWichtigste Segmente: ___\nVereinbarungen darin: ___", "x": -300, "y": -370, "width": 280, "height": 160, "color": "3" },
+
+    { "id": "doc-notiz", "type": "text", "text": "**📝 Notiz / Tagebuch**\n\nID: DOC-???\nDatum: ___\nThema: ___\nKernpunkte: ___\nVerlässlichkeit: Erinnerung", "x": 0, "y": -370, "width": 260, "height": 160, "color": "3" },
+
+    { "id": "doc-audio", "type": "text", "text": "**🎙 Sprachmemo / Audio**\n\nID: DOC-???\nDatum: ___\nDauer: ___\nZusammenfassung: ___\nRelevanz: hoch | mittel | niedrig", "x": 280, "y": -370, "width": 240, "height": 160, "color": "3" },
+
+    { "id": "sec-refle", "type": "text", "text": "# 7 · SELBSTREFLEXION", "x": 600, "y": -440, "width": 680, "height": 50, "color": "2" },
+
+    { "id": "r-relativiert", "type": "text", "text": "**🔶 Wo habe ich relativiert?**\n\n• [Moment beschreiben]\n• Was hätte ich vollständiger sehen sollen?\n\n(Keine Selbstabwertung – nur Beobachtung)", "x": 600, "y": -370, "width": 300, "height": 160, "color": "2" },
+
+    { "id": "r-muster", "type": "text", "text": "**🔁 Wiederkehrende Muster**\n\n• Muster 1: ___\n• Muster 2: ___\n• Muster 3: ___\n\n(Beobachtung, keine Diagnose)", "x": 920, "y": -370, "width": 280, "height": 160, "color": "2" },
+
+    { "id": "r-kontext", "type": "text", "text": "**📎 Fehlende Kontexte**\n\n• Was habe ich weggelassen: ___\n• Was war der eigentliche Hintergrund: ___\n• Was hat das beeinflusst: ___", "x": 600, "y": -190, "width": 300, "height": 140, "color": "2" },
+
+    { "id": "r-beduerfnis", "type": "text", "text": "**💛 Zurückgestellte Bedürfnisse**\n\n• Bedürfnis 1: ___\n• Bedürfnis 2: ___\n\n(Benennen – nicht bewerten)", "x": 920, "y": -190, "width": 280, "height": 140, "color": "2" }
+
+  ],
+  "edges": [
+    { "id": "e1", "fromNode": "sec-timeline", "fromSide": "bottom", "toNode": "evt-template", "toSide": "top" },
+    { "id": "e2", "fromNode": "evt-example1", "fromSide": "right", "toNode": "evt-example2", "toSide": "left" },
+    { "id": "e3", "fromNode": "evt-example2", "fromSide": "right", "toNode": "evt-example3", "toSide": "left" },
+    { "id": "e4", "fromNode": "evt-example3", "fromSide": "right", "toNode": "evt-example4", "toSide": "left" },
+    { "id": "e5", "fromNode": "clu-komm", "fromSide": "right", "toNode": "clu-verei", "toSide": "left", "label": "erzeugt" },
+    { "id": "e6", "fromNode": "clu-gren", "fromSide": "bottom", "toNode": "clu-konf", "toSide": "top", "label": "führt zu" },
+    { "id": "e7", "fromNode": "clu-konf", "fromSide": "right", "toNode": "clu-emot", "toSide": "right", "label": "beeinflusst" },
+    { "id": "e8", "fromNode": "chat-guide", "fromSide": "bottom", "toNode": "chat-card1", "toSide": "top" },
+    { "id": "e9", "fromNode": "g-beduerfnis", "fromSide": "right", "toNode": "g-grenzen", "toSide": "left" },
+    { "id": "e10", "fromNode": "g-grenzen", "fromSide": "right", "toNode": "g-fragen", "toSide": "left" },
+    { "id": "e11", "fromNode": "r-relativiert", "fromSide": "bottom", "toNode": "r-kontext", "toSide": "top" },
+    { "id": "e12", "fromNode": "r-muster", "fromSide": "bottom", "toNode": "r-beduerfnis", "toSide": "top" }
+  ]
+}

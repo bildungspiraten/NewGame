@@ -1,0 +1,121 @@
+{
+  "_comment": "MULTITOOLIGAN – Beispieldaten. Diese Datei zeigt die Struktur. Ersetze die Platzhalter mit echten Einträgen.",
+  "version": "1.0",
+  "created": "",
+  "timeline": [
+    {
+      "id": "EVT-001",
+      "type": "event",
+      "date": "DATUM-EINTRAGEN",
+      "title": "[Ereignis-Titel]",
+      "description": "[Sachliche Beschreibung was passiert ist]",
+      "participants": ["Person-A", "Person-B"],
+      "location": "[Medium / Ort]",
+      "context": "[Was war der Hintergrund?]",
+      "impact": "[Was hat sich danach verändert?]",
+      "open_questions": ["[Was ist noch unklar?]"],
+      "related_events": [],
+      "tags": ["vereinbarung"],
+      "certainty": "sicher",
+      "source": "[Quelle: Erinnerung / Chat / Dokument]",
+      "cluster": "CLU-KOMMUNIKATION",
+      "priority": "hoch",
+      "color_code": "agreement"
+    },
+    {
+      "id": "EVT-002",
+      "type": "agreement",
+      "date": "DATUM-EINTRAGEN",
+      "title": "[Vereinbarung: ...]",
+      "description": "[Was wurde vereinbart?]",
+      "participants": ["Person-A", "Person-B"],
+      "location": "[persönlich / WhatsApp / ...]",
+      "context": "[Wie kam es dazu?]",
+      "impact": "[Wurde sie eingehalten?]",
+      "open_questions": ["[Ist sie noch gültig?]"],
+      "related_events": ["EVT-001"],
+      "tags": ["vereinbarung", "grenze"],
+      "certainty": "sicher",
+      "source": "WhatsApp",
+      "cluster": "CLU-VEREINBARUNGEN",
+      "priority": "hoch",
+      "color_code": "agreement"
+    }
+  ],
+  "clusters": [
+    {
+      "id": "CLU-KOMMUNIKATION",
+      "name": "Kommunikation",
+      "subtopics": [],
+      "patterns": [],
+      "open_points": [],
+      "related_events": ["EVT-001"],
+      "notes": ""
+    }
+  ],
+  "documents": [
+    {
+      "id": "DOC-001",
+      "type": "brief",
+      "title": "[Titel des Briefes / Dokuments]",
+      "date": "DATUM-EINTRAGEN",
+      "author": "Person-A",
+      "summary": "[Worum geht es in diesem Dokument?]",
+      "key_points": ["[Punkt 1]", "[Punkt 2]"],
+      "quotes": ["[Direktes Zitat, wenn relevant]"],
+      "tags": ["brief"],
+      "status": "gesendet",
+      "priority": "mittel",
+      "sensitive": true
+    }
+  ],
+  "chat_analyses": [
+    {
+      "id": "CHAT-001",
+      "platform": "WhatsApp",
+      "date_range": "VON - BIS",
+      "participants": ["Person-A", "Person-B"],
+      "key_segments": [
+        {
+          "date": "DATUM",
+          "theme": "[Thema dieses Gesprächsabschnitts]",
+          "summary": "[Was wurde besprochen?]",
+          "type": "agreement | conflict | de-escalation | question"
+        }
+      ],
+      "patterns_observed": [
+        "[Beobachtetes Muster ohne Diagnose]"
+      ],
+      "agreements_mentioned": ["EVT-002"],
+      "unanswered_questions": ["[Frage die gestellt aber nicht beantwortet wurde]"],
+      "escalation_points": []
+    }
+  ],
+  "conversation_prep": [
+    {
+      "id": "PREP-001",
+      "created": "DATUM-EINTRAGEN",
+      "topic": "[Gesprächsthema]",
+      "my_needs": ["[Bedürfnis 1]", "[Bedürfnis 2]"],
+      "my_limits": ["[Grenze 1 – was ich nicht akzeptiere]"],
+      "open_questions": ["[Frage, die ich stellen möchte]"],
+      "things_not_to_forget": ["[Punkt der wichtig ist]"],
+      "possible_triggers": ["[Was könnte eskalieren?]"],
+      "de_escalation_strategies": ["[Was hilft mir, ruhig zu bleiben?]"],
+      "safe_phrases": ["[Formulierung, die sachlich ist]"]
+    }
+  ],
+  "reflections": [
+    {
+      "id": "REF-001",
+      "date": "DATUM-EINTRAGEN",
+      "where_did_i_relativize": ["[Moment, wo ich etwas heruntergespielt habe]"],
+      "missing_context": ["[Was habe ich vergessen zu berücksichtigen?]"],
+      "recurring_patterns": ["[Muster, das sich wiederholt]"],
+      "boundaries_crossed": ["[Grenze, die überschritten wurde]"],
+      "needs_stepped_back": ["[Bedürfnis, das ich zurückgestellt habe]"],
+      "factual_observations": ["[Sachliche Beobachtung ohne Wertung]"],
+      "notes": ""
+    }
+  ]
+}
