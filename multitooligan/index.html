@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MULTITOOLIGAN</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d1a;--surface:#12122a;--surface2:#1a1a35;--border:rgba(255,255,255,.08);
+  --text:#e8e0d0;--text2:#8a8090;--text3:#504858;--gold:#d4a96a;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif}
+body{display:flex;flex-direction:column;align-items:center;padding:40px 20px 60px}
+
+.hero{text-align:center;margin-bottom:40px}
+.hero-mark{font-size:48px;color:var(--gold);opacity:.7;margin-bottom:12px}
+h1{font-size:22px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.hero-sub{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--text3)}
+.hero-tagline{margin-top:16px;font-size:14px;color:var(--text2);max-width:420px;line-height:1.65}
+
+.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;width:100%;max-width:800px;margin-bottom:32px}
+
+.tool-card{
+  display:block;text-decoration:none;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:20px;transition:background .18s,border-color .18s,transform .15s;
+}
+.tool-card:hover{background:var(--surface2);border-color:rgba(212,169,106,.2);transform:translateY(-2px)}
+.tool-card-icon{font-size:28px;margin-bottom:10px}
+.tool-card-name{font-size:15px;font-weight:600;color:var(--text);margin-bottom:5px}
+.tool-card-desc{font-size:12px;color:var(--text2);line-height:1.55}
+.tool-card-tag{display:inline-block;margin-top:10px;padding:2px 9px;border-radius:10px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--border);color:var(--text3)}
+
+.section-title{width:100%;max-width:800px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;padding-left:2px}
+
+.files{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;width:100%;max-width:800px;margin-bottom:32px}
+.file-item{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:12px 14px;display:flex;gap:10px;align-items:flex-start
+}
+.file-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.file-info{}
+.file-name{font-size:12px;font-weight:600;color:var(--text2);font-family:monospace}
+.file-desc{font-size:11px;color:var(--text3);margin-top:2px;line-height:1.4}
+
+.principles{width:100%;max-width:800px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px}
+.principles-title{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--text3);margin-bottom:12px}
+.principle-list{display:flex;flex-wrap:wrap;gap:8px}
+.principle{padding:5px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;font-size:12px;color:var(--text2)}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-mark">⊕</div>
+  <h1>MULTITOOLIGAN</h1>
+  <div class="hero-sub">Whiteboard-System</div>
+  <p class="hero-tagline">Struktur, Übersicht und Reflexion — lokal, privat, ohne Backend. Kein Upload. Alles bleibt auf diesem Gerät.</p>
+</div>
+
+<div class="section-title">Interaktive Tools</div>
+<div class="tools">
+
+  <a class="tool-card" href="board/index.html">
+    <div class="tool-card-icon">⬜</div>
+    <div class="tool-card-name">Whiteboard / Board</div>
+    <div class="tool-card-desc">Drag & Drop Karten für Ereignisse, Vereinbarungen, Konflikte, Beobachtungen, Zitate, Reflexionen. Drei Ansichten: Board · Zeitstrahl · Liste.</div>
+    <span class="tool-card-tag">12 Kartentypen · localStorage</span>
+  </a>
+
+  <a class="tool-card" href="guide/index.html">
+    <div class="tool-card-icon">💬</div>
+    <div class="tool-card-name">Gesprächsleitfaden</div>
+    <div class="tool-card-desc">Strukturierte Vorbereitung für schwierige Gespräche. Bedürfnisse, Grenzen, offene Fragen, Trigger, Formulierungen — als Karten und im Pocket-Modus.</div>
+    <span class="tool-card-tag">Pocket-Modus · Timer · Drucken</span>
+  </a>
+
+  <a class="tool-card" href="journal/index.html">
+    <div class="tool-card-icon">✎</div>
+    <div class="tool-card-name">Reflexions-Journal</div>
+    <div class="tool-card-desc">Geführtes Journal mit strukturierten Fragen: Relativierungen, fehlende Kontexte, Muster, Grenzen, Bedürfnisse. Mit Mustererkennung über alle Einträge.</div>
+    <span class="tool-card-tag">Geführte Fragen · Mustererkennung</span>
+  </a>
+
+</div>
+
+<div class="section-title">Schemas & Vorlagen</div>
+<div class="files">
+  <div class="file-item"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">schema/event-schema.yaml</div><div class="file-desc">Vorlage für Timeline-Einträge und Ereignisse</div></div></div>
+  <div class="file-item"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">schema/cluster-schema.yaml</div><div class="file-desc">9 vordefinierte Themencluster</div></div></div>
+  <div class="file-item"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">schema/document-schema.yaml</div><div class="file-desc">Dokumente, Briefe, Chat-Exporte strukturieren</div></div></div>
+  <div class="file-item"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">schema/app-module-schema.yaml</div><div class="file-desc">8 App-Modul-Konzepte mit UI, Risiken, Datenschutz</div></div></div>
+  <div class="file-item"><div class="file-icon">🗃</div><div class="file-info"><div class="file-name">data/tags.json</div><div class="file-desc">Tag-Taxonomie mit Farbcodes (5 Kategorien)</div></div></div>
+  <div class="file-item"><div class="file-icon">🗃</div><div class="file-info"><div class="file-name">data/example-data.json</div><div class="file-desc">Vollständige Datenstruktur als ausfüllbare Vorlage</div></div></div>
+  <div class="file-item"><div class="file-icon">🖼</div><div class="file-info"><div class="file-name">whiteboard.canvas</div><div class="file-desc">Obsidian Canvas — 45+ Karten über alle 7 Sektionen</div></div></div>
+  <div class="file-item"><div class="file-icon">📊</div><div class="file-info"><div class="file-name">diagrams/overview.md</div><div class="file-desc">7 Mermaid-Diagramme (Mindmap, Flowchart, Graphen)</div></div></div>
+</div>
+
+<div class="section-title">Grundsätze</div>
+<div class="principles">
+  <div class="principles-title">Was dieses System nicht tut</div>
+  <div class="principle-list">
+    <span class="principle">Keine Diagnosen</span>
+    <span class="principle">Keine Schuldzuschreibungen</span>
+    <span class="principle">Keine Pathologisierung</span>
+    <span class="principle">Kein Upload</span>
+    <span class="principle">Keine Cloud</span>
+    <span class="principle">Keine Manipulation</span>
+    <span class="principle">Keine Behauptungen ohne Kennzeichnung</span>
+    <span class="principle">Keine künstliche Dramatisierung</span>
+  </div>
+  <div class="principles-title" style="margin-top:14px">Was dieses System tut</div>
+  <div class="principle-list">
+    <span class="principle">Struktur geben</span>
+    <span class="principle">Übersicht schaffen</span>
+    <span class="principle">Zeitliche Einordnung</span>
+    <span class="principle">Muster sichtbar machen</span>
+    <span class="principle">Reflexion ermöglichen</span>
+    <span class="principle">Gesprächsvorbereitung</span>
+    <span class="principle">Vereinbarungen dokumentieren</span>
+    <span class="principle">Alles lokal & privat halten</span>
+  </div>
+</div>
+
+</body>
+</html>

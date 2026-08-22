@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reflexions-Journal – MULTITOOLIGAN</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d1a;--surface:#12122a;--surface2:#1a1a35;--border:rgba(255,255,255,.08);
+  --text:#e8e0d0;--text2:#8a8090;--text3:#504858;
+  --gold:#d4a96a;--red:#c84a4a;--green:#4ac87a;--orange:#c8956c;--purple:#a06cc8;
+  --r:10px;--tr:.18s ease;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;font-size:15px}
+body{display:flex;flex-direction:column;align-items:center;padding:0 0 60px}
+
+.hdr{width:100%;max-width:720px;padding:24px 20px 0;display:flex;align-items:center;gap:12px}
+.hdr-back{background:none;border:1px solid var(--border);color:var(--text2);padding:6px 12px;border-radius:20px;cursor:pointer;font-size:13px;text-decoration:none}
+.hdr-back:hover{border-color:rgba(212,169,106,.3);color:var(--gold)}
+.hdr-title{font-size:13px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold)}
+.hdr-right{margin-left:auto;display:flex;gap:8px}
+
+.container{width:100%;max-width:720px;padding:20px 20px 0}
+
+/* Entry list */
+.entry-grid{display:grid;grid-template-columns:220px 1fr;gap:0;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);min-height:500px}
+
+/* Sidebar */
+.entry-sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column}
+.sidebar-top{padding:12px;border-bottom:1px solid var(--border)}
+.entry-items{overflow-y:auto;flex:1}
+.entry-thumb{
+  padding:12px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);
+  transition:background var(--tr);border-left:3px solid transparent
+}
+.entry-thumb:hover{background:var(--surface2)}
+.entry-thumb.active{background:rgba(212,169,106,.06);border-left-color:var(--gold)}
+.entry-thumb-date{font-size:11px;color:var(--text3);margin-bottom:3px}
+.entry-thumb-preview{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.entry-thumb-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.entry-thumb-tag{font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text3)}
+
+/* Detail / Editor */
+.entry-detail{background:var(--bg);padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+.detail-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text3);gap:12px}
+.detail-empty-icon{font-size:36px}
+
+/* Form fields */
+.f-row{display:flex;gap:12px;align-items:center}
+.f-date{padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none}
+.f-date:focus{border-color:rgba(212,169,106,.3)}
+.f-private{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3);cursor:pointer;user-select:none}
+.f-private input{accent-color:var(--purple)}
+
+.question-block{display:flex;flex-direction:column;gap:6px}
+.q-label{font-size:12px;color:var(--text2);font-weight:600;display:flex;align-items:center;gap:8px}
+.q-label .q-icon{font-size:14px}
+.q-hint{font-size:11px;color:var(--text3);font-style:italic}
+.q-text{
+  width:100%;padding:10px 12px;background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;
+  resize:none;min-height:70px;max-height:180px;outline:none;line-height:1.55
+}
+.q-text:focus{border-color:rgba(212,169,106,.2)}
+.q-text::placeholder{color:var(--text3)}
+
+/* Pattern tags */
+.pattern-note{font-size:12px;padding:10px 14px;background:rgba(212,169,106,.06);border:1px solid rgba(212,169,106,.15);border-radius:8px;color:var(--gold);line-height:1.5}
+
+/* Actions */
+.detail-actions{display:flex;gap:8px;padding-top:4px}
+.btn{padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid var(--border);color:var(--text2);background:var(--surface2);transition:.15s}
+.btn:hover{border-color:rgba(212,169,106,.3);color:var(--gold)}
+.btn.primary{background:var(--gold);color:#0d0d1a;border-color:transparent;font-weight:600}
+.btn.primary:hover{opacity:.85;color:#0d0d1a}
+.btn.danger{color:var(--red);border-color:rgba(200,74,74,.2);background:rgba(200,74,74,.06)}
+
+/* Stats bar */
+.stats-bar{display:flex;gap:16px;padding:12px 0;border-bottom:1px solid var(--border);margin-bottom:4px;font-size:12px;color:var(--text3)}
+.stat-item b{color:var(--gold)}
+
+/* Patterns panel */
+#patterns-panel{display:none;padding:16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);margin-top:16px}
+.patterns-title{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:10px}
+.pattern-word{display:inline-block;padding:3px 10px;margin:3px;border-radius:12px;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text2)}
+.pattern-word[data-count="3"]{border-color:rgba(212,169,106,.3);color:var(--gold)}
+.pattern-word[data-count="4"],[data-count="5"],[data-count="6"]{border-color:rgba(212,169,106,.5);color:var(--gold)}
+
+/* Toast */
+#toast{position:fixed;bottom:24px;right:24px;padding:10px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);z-index:200;opacity:0;transition:opacity .25s;pointer-events:none}
+#toast.show{opacity:1}
+
+@media(max-width:600px){
+  .entry-grid{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .entry-sidebar{border-right:none;border-bottom:1px solid var(--border);max-height:220px}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <a class="hdr-back" href="../index.html">← System</a>
+  <span class="hdr-title">Reflexions-Journal</span>
+  <div class="hdr-right">
+    <button class="btn" onclick="togglePatterns()">◉ Muster</button>
+    <button class="btn" onclick="exportAll()">Export JSON</button>
+    <button class="btn primary" onclick="newEntry()">+ Eintrag</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="stats-bar" id="stats-bar"></div>
+
+  <div class="entry-grid">
+    <div class="entry-sidebar">
+      <div class="sidebar-top">
+        <input type="text" style="width:100%;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;outline:none" placeholder="Suchen..." oninput="filterList(this.value)" id="search">
+      </div>
+      <div class="entry-items" id="entry-list"></div>
+    </div>
+    <div class="entry-detail" id="detail">
+      <div class="detail-empty">
+        <div class="detail-empty-icon">✎</div>
+        <p>Wähle einen Eintrag oder erstelle einen neuen.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="patterns-panel">
+    <div class="patterns-title">Wiederkehrende Wörter (über alle Einträge)</div>
+    <div id="pattern-words"></div>
+    <p style="font-size:11px;color:var(--text3);margin-top:10px">Stopp-Wörter und kurze Wörter werden herausgefiltert. Dies ist eine Musterhilfe, keine Analyse.</p>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const STORE='multitooligan_journal';
+let entries=load();
+let currentId=null;
+
+const QUESTIONS=[
+  {id:'q_relativized',icon:'🔶',label:'Habe ich etwas heruntergespielt oder relativiert?',hint:'Was genau? Was hätte ich vollständiger sehen können?',placeholder:'z. B. Ich habe gesagt „Das ist nicht so schlimm", aber eigentlich war es...'},
+  {id:'q_missing',icon:'📎',label:'Welche Kontexte habe ich weggelassen?',hint:'Was war der eigentliche Hintergrund, den ich nicht erwähnt oder bedacht habe?',placeholder:'z. B. Ich habe nicht berücksichtigt, dass...'},
+  {id:'q_patterns',icon:'🔁',label:'Welche Muster erkenne ich?',hint:'Was wiederholt sich – in Situationen, Reaktionen, Gedanken, Gefühlen?',placeholder:'z. B. Ich bemerke, dass ich immer dann...'},
+  {id:'q_limits',icon:'🚧',label:'Welche Grenzen wurden übergangen oder nicht gesetzt?',hint:'Eigene Grenzen – nicht die der anderen Person.',placeholder:'z. B. Ich hätte früher sagen sollen, dass...'},
+  {id:'q_needs',icon:'💛',label:'Welche Bedürfnisse habe ich zurückgestellt?',hint:'Nicht als Vorwurf – nur als Beobachtung benennen.',placeholder:'z. B. Ich hätte gebraucht, dass...'},
+  {id:'q_facts',icon:'📋',label:'Sachliche Beobachtungen',hint:'Nur was tatsächlich passiert ist – keine Interpretation.',placeholder:'z. B. Am [Datum] passierte Folgendes: ...'},
+  {id:'q_free',icon:'✎',label:'Sonstige Gedanken / Freies Schreiben',hint:'Alles was noch rausmuss.',placeholder:'...'},
+];
+
+const STOPWORDS=new Set('ich du er sie es wir ihr sie ich ein eine einen einem einer eines der die das und oder aber wenn dann auch mit von zu an auf für in aus ist war hat hatte wird wurde kann könnte sollte müsste muss will wollte soll haben sein werden noch mal mehr sehr viel nur so wie was wer wen wem dessen deren welche welcher welches als ob um durch über unter zwischen vor nach seit bei bis zum zur des den diesem dieser dieses'.split(' '));
+
+function load(){try{return JSON.parse(localStorage.getItem(STORE)||'[]')}catch{return[]}}
+function saveAll(){try{localStorage.setItem(STORE,JSON.stringify(entries))}catch{}}
+function genId(){return 'j-'+Date.now()+'-'+Math.random().toString(36).slice(2,5)}
+
+// ── List ──────────────────────────────────────────────────────────────────────
+function renderList(filter=''){
+  const list=document.getElementById('entry-list');
+  const filtered=entries
+    .slice()
+    .sort((a,b)=>(b.date||'').localeCompare(a.date||''))
+    .filter(e=>!filter||JSON.stringify(e).toLowerCase().includes(filter.toLowerCase()));
+
+  if(!filtered.length){
+    list.innerHTML=`<div style="padding:20px 14px;font-size:12px;color:var(--text3)">${filter?'Keine Treffer.':'Noch keine Einträge.'}</div>`;
+    return;
+  }
+  list.innerHTML=filtered.map(e=>{
+    const preview=previewText(e);
+    const tags=entryTags(e);
+    return`<div class="entry-thumb${e.id===currentId?' active':''}" onclick="openEntry('${e.id}')">
+      <div class="entry-thumb-date">${fmtDate(e.date)}</div>
+      <div class="entry-thumb-preview">${esc(preview)}</div>
+      ${tags.length?`<div class="entry-thumb-tags">${tags.map(t=>`<span class="entry-thumb-tag">${esc(t)}</span>`).join('')}</div>`:''}
+    </div>`;
+  }).join('');
+
+  updateStats();
+}
+
+function filterList(q){renderList(q)}
+
+function previewText(e){
+  for(const q of QUESTIONS){
+    const v=(e[q.id]||'').trim();
+    if(v) return v.slice(0,60)+(v.length>60?'…':'');
+  }
+  return 'Leerer Eintrag';
+}
+
+function entryTags(e){
+  const tags=[];
+  if(e.private) tags.push('🔒 Privat');
+  if((e.q_patterns||'').trim()) tags.push('Muster');
+  if((e.q_limits||'').trim()) tags.push('Grenze');
+  if((e.q_needs||'').trim()) tags.push('Bedürfnis');
+  return tags;
+}
+
+function updateStats(){
+  const el=document.getElementById('stats-bar');
+  const withPatterns=entries.filter(e=>(e.q_patterns||'').trim()).length;
+  const withLimits=entries.filter(e=>(e.q_limits||'').trim()).length;
+  el.innerHTML=`
+    <span class="stat-item">Einträge: <b>${entries.length}</b></span>
+    <span class="stat-item">Mit Mustern: <b>${withPatterns}</b></span>
+    <span class="stat-item">Mit Grenzen: <b>${withLimits}</b></span>
+  `;
+}
+
+// ── Editor ────────────────────────────────────────────────────────────────────
+function newEntry(){
+  const e={id:genId(),date:today(),private:false};
+  QUESTIONS.forEach(q=>{e[q.id]='';});
+  entries.unshift(e);
+  saveAll();
+  openEntry(e.id);
+}
+
+function openEntry(id){
+  currentId=id;
+  const e=entries.find(x=>x.id===id);
+  if(!e) return;
+  renderDetail(e);
+  renderList(document.getElementById('search').value);
+}
+
+function renderDetail(e){
+  const detail=document.getElementById('detail');
+  detail.innerHTML=`
+    <div class="f-row">
+      <input type="date" class="f-date" id="f-date" value="${e.date||''}" onchange="sync('date',this.value)">
+      <label class="f-private">
+        <input type="checkbox" ${e.private?'checked':''} onchange="sync('private',this.checked)"> Privat
+      </label>
+      <div style="margin-left:auto;font-size:11px;color:var(--text3)">ID: ${e.id}</div>
+    </div>
+
+    ${QUESTIONS.map(q=>`
+      <div class="question-block">
+        <label class="q-label"><span class="q-icon">${q.icon}</span>${q.label}</label>
+        <p class="q-hint">${q.hint}</p>
+        <textarea class="q-text" id="${q.id}"
+          placeholder="${q.placeholder}"
+          oninput="autoResize(this);sync('${q.id}',this.value)"
+        >${esc(e[q.id]||'')}</textarea>
+      </div>
+    `).join('')}
+
+    <div class="detail-actions">
+      <button class="btn primary" onclick="saveEntry()">Speichern</button>
+      <button class="btn danger" onclick="deleteEntry()">Löschen</button>
+    </div>
+  `;
+
+  // Auto resize all textareas
+  detail.querySelectorAll('.q-text').forEach(autoResize);
+}
+
+function autoResize(el){
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,180)+'px';
+}
+
+let syncTimer;
+function sync(key,val){
+  const e=entries.find(x=>x.id===currentId);
+  if(!e) return;
+  e[key]=val;
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(()=>{e.updatedAt=Date.now();saveAll();renderList(document.getElementById('search').value);},800);
+}
+
+function saveEntry(){
+  const e=entries.find(x=>x.id===currentId);
+  if(!e) return;
+  e.date=document.getElementById('f-date')?.value||e.date;
+  e.updatedAt=Date.now();
+  saveAll();
+  renderList(document.getElementById('search').value);
+  toast('Gespeichert');
+}
+
+function deleteEntry(){
+  if(!confirm('Eintrag endgültig löschen?')) return;
+  entries=entries.filter(x=>x.id!==currentId);
+  currentId=null;
+  saveAll();
+  document.getElementById('detail').innerHTML=`<div class="detail-empty"><div class="detail-empty-icon">✎</div><p>Wähle einen Eintrag oder erstelle einen neuen.</p></div>`;
+  renderList(document.getElementById('search').value);
+  toast('Gelöscht');
+}
+
+// ── Patterns ──────────────────────────────────────────────────────────────────
+function togglePatterns(){
+  const panel=document.getElementById('patterns-panel');
+  if(panel.style.display==='block'){panel.style.display='none';return;}
+  panel.style.display='block';
+  const freq={};
+  entries.forEach(e=>{
+    const text=QUESTIONS.map(q=>e[q.id]||'').join(' ').toLowerCase();
+    text.split(/\W+/).forEach(w=>{
+      if(w.length<4||STOPWORDS.has(w)) return;
+      freq[w]=(freq[w]||0)+1;
+    });
+  });
+  const sorted=Object.entries(freq).filter(([,c])=>c>=2).sort((a,b)=>b[1]-a[1]).slice(0,60);
+  if(!sorted.length){
+    document.getElementById('pattern-words').innerHTML='<span style="color:var(--text3);font-size:12px">Noch zu wenig Einträge für Mustererkennung.</span>';
+    return;
+  }
+  document.getElementById('pattern-words').innerHTML=sorted.map(([w,c])=>`<span class="pattern-word" data-count="${Math.min(c,6)}">${w} (${c})</span>`).join('');
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+function exportAll(){
+  const blob=new Blob([JSON.stringify({version:'1.0',exported:new Date().toISOString(),entries},null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`reflexionsjournal_${Date.now()}.json`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Exportiert');
+}
+
+// ── Util ──────────────────────────────────────────────────────────────────────
+function today(){return new Date().toISOString().slice(0,10)}
+function fmtDate(d){
+  if(!d) return '–';
+  try{return new Date(d+'T12:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})}catch{return d}
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+let toastTimer;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2200);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+renderList();
+updateStats();
+</script>
+</body>
+</html>
