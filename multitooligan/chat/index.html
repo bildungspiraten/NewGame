@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat-Analyse – MULTITOOLIGAN</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d1a;--surface:#12122a;--surface2:#1a1a35;--surface3:#22223f;
+  --border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.14);
+  --text:#e8e0d0;--text2:#8a8090;--text3:#504858;--gold:#d4a96a;
+  --red:#c86c6c;--green:#4ac87a;--blue:#6cb4d4;--purple:#a06cc8;--amber:#c8924a;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif}
+
+/* ── LAYOUT ── */
+.app{display:flex;flex-direction:column;height:100dvh;max-width:1100px;margin:0 auto}
+.topbar{flex-shrink:0;display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.topbar h1{font-size:15px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+.topbar-back{color:var(--text2);text-decoration:none;font-size:13px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;transition:background .15s}
+.topbar-back:hover{background:var(--surface2)}
+.topbar-spacer{flex:1}
+.topbar-btn{padding:6px 14px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;transition:background .15s}
+.topbar-btn:hover{background:var(--surface3);color:var(--text)}
+.topbar-btn.primary{border-color:rgba(212,169,106,.4);color:var(--gold)}
+
+.workspace{flex:1;display:grid;grid-template-columns:300px 1fr;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-section{padding:12px 14px;border-bottom:1px solid var(--border)}
+.sidebar-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+#paste-area{width:100%;min-height:110px;resize:vertical;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:10px;color:var(--text);font-size:12px;font-family:monospace;line-height:1.5}
+#paste-area::placeholder{color:var(--text3)}
+.parse-row{display:flex;gap:8px;margin-top:8px}
+.parse-btn{flex:1;padding:8px;border-radius:7px;border:1px solid rgba(212,169,106,.35);background:rgba(212,169,106,.08);color:var(--gold);font-size:12px;font-weight:600;cursor:pointer;transition:background .15s}
+.parse-btn:hover{background:rgba(212,169,106,.18)}
+.format-select{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text2);font-size:12px;padding:0 8px;cursor:pointer}
+
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.stat-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center}
+.stat-num{font-size:20px;font-weight:700;color:var(--gold)}
+.stat-lbl{font-size:10px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.08em}
+
+.speaker-list{display:flex;flex-direction:column;gap:4px;max-height:180px;overflow-y:auto}
+.speaker-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;transition:background .15s}
+.speaker-item:hover{background:var(--surface3)}
+.speaker-item.active{border-color:rgba(212,169,106,.4);background:rgba(212,169,106,.06)}
+.speaker-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.speaker-name{font-size:12px;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.speaker-count{font-size:11px;color:var(--text3)}
+
+.filter-chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{padding:3px 10px;border-radius:12px;font-size:11px;border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:background .12s,color .12s}
+.chip:hover{background:var(--surface3)}
+.chip.active{color:#fff;border-color:transparent}
+.chip[data-tag="vereinbarung"].active{background:#4a7b8c}
+.chip[data-tag="grenze"].active{background:#c86c6c}
+.chip[data-tag="konflikt"].active{background:#c84a4a}
+.chip[data-tag="deeskalation"].active{background:#4ac87a}
+.chip[data-tag="frage"].active{background:#6cb4d4}
+.chip[data-tag="muster"].active{background:#a06cc8}
+.chip[data-tag="zitat"].active{background:#d4a96a;color:#0d0d1a}
+.chip[data-tag="notiz"].active{background:#808080}
+
+/* ── MAIN PANEL ── */
+.main{display:flex;flex-direction:column;overflow:hidden}
+.main-toolbar{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.search-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 12px;color:var(--text);font-size:13px}
+.search-input::placeholder{color:var(--text3)}
+.view-btn{padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;cursor:pointer;transition:background .12s}
+.view-btn.active{background:var(--surface2);color:var(--text)}
+
+.msg-list{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:6px}
+
+/* ── MESSAGE BUBBLE ── */
+.msg{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--border);transition:background .12s}
+.msg:hover{background:var(--surface2)}
+.msg.tagged{border-color:rgba(212,169,106,.25);background:rgba(212,169,106,.04)}
+.msg-meta{flex-shrink:0;min-width:100px;max-width:120px}
+.msg-sender{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msg-time{font-size:10px;color:var(--text3);margin-top:2px}
+.msg-body{flex:1;font-size:13px;color:var(--text2);line-height:1.55;word-break:break-word}
+.msg-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.msg-tag{font-size:10px;padding:2px 7px;border-radius:8px;border:1px solid var(--border);color:var(--text3);cursor:pointer}
+.msg-tag[data-tag="vereinbarung"]{color:#4a9db0;border-color:#4a9db033}
+.msg-tag[data-tag="grenze"]{color:#c86c6c;border-color:#c86c6c33}
+.msg-tag[data-tag="konflikt"]{color:#c84a4a;border-color:#c84a4a33}
+.msg-tag[data-tag="deeskalation"]{color:#4ac87a;border-color:#4ac87a33}
+.msg-tag[data-tag="frage"]{color:#6cb4d4;border-color:#6cb4d433}
+.msg-tag[data-tag="muster"]{color:#a06cc8;border-color:#a06cc833}
+.msg-tag[data-tag="zitat"]{color:#d4a96a;border-color:#d4a96a33}
+.msg-tag[data-tag="notiz"]{color:#808080;border-color:#80808033}
+.msg-actions{flex-shrink:0;display:flex;flex-direction:column;gap:4px;opacity:0;transition:opacity .12s}
+.msg:hover .msg-actions{opacity:1}
+.msg-action-btn{padding:3px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--text3);font-size:11px;cursor:pointer;white-space:nowrap;transition:background .1s}
+.msg-action-btn:hover{background:var(--surface3);color:var(--text2)}
+
+/* ── EMPTY STATE ── */
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--text3);text-align:center;padding:40px}
+.empty-icon{font-size:40px;opacity:.4}
+.empty-title{font-size:15px;color:var(--text2)}
+.empty-sub{font-size:12px;line-height:1.6;max-width:320px}
+
+/* ── TAG POPOVER ── */
+.popover-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5)}
+.popover-overlay.hidden{display:none}
+.popover{background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:18px;min-width:280px;max-width:380px}
+.popover-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px}
+.popover-msg-preview{font-size:12px;color:var(--text2);background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:10px;margin-bottom:14px;line-height:1.5;max-height:80px;overflow:hidden;text-overflow:ellipsis}
+.popover-tag-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.popover-tag{padding:5px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:12px;cursor:pointer;transition:background .12s}
+.popover-tag.selected{color:#fff}
+.popover-tag[data-tag="vereinbarung"].selected{background:#4a7b8c;border-color:#4a7b8c}
+.popover-tag[data-tag="grenze"].selected{background:#c86c6c;border-color:#c86c6c}
+.popover-tag[data-tag="konflikt"].selected{background:#c84a4a;border-color:#c84a4a}
+.popover-tag[data-tag="deeskalation"].selected{background:#4ac87a;border-color:#4ac87a;color:#0d0d1a}
+.popover-tag[data-tag="frage"].selected{background:#6cb4d4;border-color:#6cb4d4;color:#0d0d1a}
+.popover-tag[data-tag="muster"].selected{background:#a06cc8;border-color:#a06cc8}
+.popover-tag[data-tag="zitat"].selected{background:#d4a96a;border-color:#d4a96a;color:#0d0d1a}
+.popover-tag[data-tag="notiz"].selected{background:#808080;border-color:#808080}
+.popover-note{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px;color:var(--text);font-size:12px;resize:vertical;min-height:60px;margin-bottom:12px}
+.popover-note::placeholder{color:var(--text3)}
+.popover-btns{display:flex;gap:8px}
+.popover-btns button{flex:1;padding:8px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:12px;cursor:pointer}
+.popover-btns .save-btn{border-color:rgba(212,169,106,.4);color:var(--gold);background:rgba(212,169,106,.06)}
+.popover-btns .save-btn:hover{background:rgba(212,169,106,.15)}
+
+/* ── PATTERN PANEL ── */
+.pattern-panel{flex:1;overflow-y:auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;align-content:start}
+.pattern-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px}
+.pattern-card-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.pattern-card-title .badge{font-size:11px;padding:2px 8px;border-radius:8px;font-weight:400}
+.pattern-list{list-style:none;display:flex;flex-direction:column;gap:4px}
+.pattern-list li{font-size:12px;color:var(--text2);line-height:1.5;padding:5px 8px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)}
+.pattern-list li span{color:var(--text3);font-size:11px}
+.freq-bar-wrap{margin-top:8px}
+.freq-item{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.freq-label{font-size:11px;color:var(--text2);min-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.freq-bar{flex:1;height:6px;border-radius:3px;background:var(--surface3)}
+.freq-fill{height:100%;border-radius:3px;background:var(--gold);opacity:.6}
+.freq-count{font-size:10px;color:var(--text3);min-width:24px;text-align:right}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+@media(max-width:700px){
+  .workspace{grid-template-columns:1fr}
+  .sidebar{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <a class="topbar-back" href="../index.html">← MULTITOOLIGAN</a>
+    <h1>Chat-Analyse</h1>
+    <div class="topbar-spacer"></div>
+    <button class="topbar-btn primary" id="btn-export">Export JSON</button>
+    <button class="topbar-btn" id="btn-clear">Löschen</button>
+  </div>
+
+  <div class="workspace">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Chat-Export einfügen</div>
+        <select class="format-select" id="format-select" style="width:100%;margin-bottom:8px;padding:6px 8px">
+          <option value="whatsapp">WhatsApp (.txt)</option>
+          <option value="signal">Signal / Telegram</option>
+          <option value="generic">Generisch (Zeile pro Nachricht)</option>
+        </select>
+        <textarea id="paste-area" placeholder="Chat-Text hier einfügen…&#10;&#10;Format WhatsApp:&#10;24.03.24, 14:32 – Alex: Hallo&#10;24.03.24, 14:33 – Kim: Hi"></textarea>
+        <div class="parse-row">
+          <button class="parse-btn" id="btn-parse">Analysieren</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Statistik</div>
+        <div class="stats-grid">
+          <div class="stat-box"><div class="stat-num" id="stat-total">0</div><div class="stat-lbl">Nachrichten</div></div>
+          <div class="stat-box"><div class="stat-num" id="stat-tagged">0</div><div class="stat-lbl">Markiert</div></div>
+          <div class="stat-box"><div class="stat-num" id="stat-speakers">0</div><div class="stat-lbl">Personen</div></div>
+          <div class="stat-box"><div class="stat-num" id="stat-days">0</div><div class="stat-lbl">Tage</div></div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Personen</div>
+        <div class="speaker-list" id="speaker-list"></div>
+      </div>
+
+      <div class="sidebar-section" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+        <div class="sidebar-label">Kategorien</div>
+        <div class="filter-chips">
+          <span class="chip" data-tag="vereinbarung">Vereinbarung</span>
+          <span class="chip" data-tag="grenze">Grenze</span>
+          <span class="chip" data-tag="konflikt">Konflikt</span>
+          <span class="chip" data-tag="deeskalation">Deeskalation</span>
+          <span class="chip" data-tag="frage">Frage</span>
+          <span class="chip" data-tag="muster">Muster</span>
+          <span class="chip" data-tag="zitat">Zitat</span>
+          <span class="chip" data-tag="notiz">Notiz</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+      <div class="main-toolbar">
+        <input class="search-input" id="search" placeholder="Suchen…" type="search">
+        <button class="view-btn active" data-view="messages">Nachrichten</button>
+        <button class="view-btn" data-view="tagged">Markiert</button>
+        <button class="view-btn" data-view="patterns">Muster</button>
+      </div>
+      <div class="msg-list" id="msg-list">
+        <div class="empty">
+          <div class="empty-icon">💬</div>
+          <div class="empty-title">Noch kein Chat geladen</div>
+          <div class="empty-sub">Chat-Export links einfügen und „Analysieren" klicken. Nachrichten bleiben lokal auf diesem Gerät.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TAG POPOVER -->
+<div class="popover-overlay hidden" id="popover-overlay">
+  <div class="popover">
+    <div class="popover-title">Nachricht markieren</div>
+    <div class="popover-msg-preview" id="popover-preview"></div>
+    <div class="popover-tag-grid" id="popover-tags"></div>
+    <textarea class="popover-note" id="popover-note" placeholder="Optionale Notiz zu dieser Nachricht…"></textarea>
+    <div class="popover-btns">
+      <button id="popover-cancel">Abbrechen</button>
+      <button class="save-btn" id="popover-save">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'multitooligan_chat';
+const TAG_DEFS = ['vereinbarung','grenze','konflikt','deeskalation','frage','muster','zitat','notiz'];
+const SPEAKER_COLORS = ['#d4a96a','#6cb4d4','#a06cc8','#4ac87a','#c86c6c','#4a7b8c','#c8924a','#808080'];
+
+// ── STATE ──
+let state = loadState();
+let activeFilters = { speaker: null, tags: new Set(), search: '' };
+let currentView = 'messages';
+let popoverMsgId = null;
+let popoverSelectedTags = new Set();
+
+function loadState() {
+  try { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : { messages: [], speakers: [] }; }
+  catch(e) { return { messages: [], speakers: [] }; }
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+// ── PARSE ──
+function parseChat(raw, format) {
+  const lines = raw.split('\n');
+  const messages = [];
+  let id = Date.now();
+
+  if (format === 'whatsapp') {
+    // 24.03.24, 14:32 – Alex: Text
+    // also: [24.03.2024, 14:32:00] Alex: Text
+    const reBracket = /^\[(\d{1,2}\.\d{1,2}\.\d{2,4}),\s*(\d{1,2}:\d{2}(?::\d{2})?)\]\s*([^:]+):\s*(.+)$/;
+    const reDash = /^(\d{1,2})\.(\d{1,2})\.(\d{2,4}),\s*(\d{1,2}:\d{2})\s*[–-]\s*([^:]+):\s*(.+)$/;
+    for (const line of lines) {
+      const mD = line.match(reDash);
+      if (mD) {
+        const [,d,m,y,time,sender,text] = mD;
+        const year = y.length===2 ? '20'+y : y;
+        messages.push({ id:id++, date:`${year}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`, time, sender:sender.trim(), text:text.trim(), tags:[], note:'' });
+        continue;
+      }
+      const mB = line.match(reBracket);
+      if (mB) {
+        const [,dateStr,time,sender,text] = mB;
+        const [d,m,y] = dateStr.split('.');
+        const year = y.length===2 ? '20'+y : y;
+        messages.push({ id:id++, date:`${year}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`, time, sender:sender.trim(), text:text.trim(), tags:[], note:'' });
+        continue;
+      }
+      // continuation line
+      if (messages.length && line.trim() && !line.match(/^\d/)) {
+        messages[messages.length-1].text += ' ' + line.trim();
+      }
+    }
+  } else if (format === 'generic') {
+    for (const line of lines) {
+      const t = line.trim();
+      if (!t) continue;
+      const m = t.match(/^([^:]{1,40}):\s*(.+)$/);
+      if (m) {
+        messages.push({ id:id++, date:'', time:'', sender:m[1].trim(), text:m[2].trim(), tags:[], note:'' });
+      } else {
+        messages.push({ id:id++, date:'', time:'', sender:'?', text:t, tags:[], note:'' });
+      }
+    }
+  } else {
+    // signal/telegram: generic fallback
+    for (const line of lines) {
+      const t = line.trim(); if (!t) continue;
+      const m = t.match(/^([^:]{1,50}):\s*(.+)$/);
+      if (m) messages.push({ id:id++, date:'', time:'', sender:m[1].trim(), text:m[2].trim(), tags:[], note:'' });
+      else messages.push({ id:id++, date:'', time:'', sender:'?', text:t, tags:[], note:'' });
+    }
+  }
+
+  // Merge existing tags into newly parsed (preserve by matching sender+text)
+  const oldMap = new Map(state.messages.map(m => [m.sender+'|'+m.text.substring(0,40), m]));
+  for (const msg of messages) {
+    const key = msg.sender+'|'+msg.text.substring(0,40);
+    const old = oldMap.get(key);
+    if (old) { msg.tags = old.tags; msg.note = old.note; }
+  }
+
+  const speakerSet = new Map();
+  messages.forEach(m => { if (!speakerSet.has(m.sender)) speakerSet.set(m.sender, SPEAKER_COLORS[speakerSet.size % SPEAKER_COLORS.length]); });
+  state.messages = messages;
+  state.speakers = [...speakerSet.entries()].map(([name,color])=>({name,color}));
+  saveState();
+}
+
+// ── FILTER ──
+function getVisible() {
+  return state.messages.filter(m => {
+    if (activeFilters.speaker && m.sender !== activeFilters.speaker) return false;
+    if (activeFilters.tags.size > 0 && !m.tags.some(t => activeFilters.tags.has(t))) return false;
+    if (activeFilters.search) {
+      const q = activeFilters.search.toLowerCase();
+      if (!m.text.toLowerCase().includes(q) && !m.sender.toLowerCase().includes(q)) return false;
+    }
+    if (currentView === 'tagged' && m.tags.length === 0) return false;
+    return true;
+  });
+}
+
+// ── RENDER ──
+function speakerColor(name) {
+  const s = state.speakers.find(sp => sp.name === name);
+  return s ? s.color : '#808080';
+}
+
+function renderMessages() {
+  const list = document.getElementById('msg-list');
+  const msgs = getVisible();
+  if (!msgs.length) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">${currentView==='tagged'?'🏷️':'🔍'}</div><div class="empty-title">${currentView==='tagged'?'Keine markierten Nachrichten':'Keine Treffer'}</div><div class="empty-sub">${currentView==='tagged'?'Klicke auf eine Nachricht und wähle eine Kategorie.':'Suchbegriff oder Filter anpassen.'}</div></div>`;
+    return;
+  }
+  let html = '';
+  for (const m of msgs) {
+    const color = speakerColor(m.sender);
+    const tagHtml = m.tags.map(t => `<span class="msg-tag" data-tag="${t}">${t}</span>`).join('');
+    html += `<div class="msg${m.tags.length?'  tagged':''}" data-id="${m.id}">
+      <div class="msg-meta">
+        <div class="msg-sender" style="color:${color}">${esc(m.sender)}</div>
+        <div class="msg-time">${m.date ? m.date.replace(/^\d{4}-/,'')+'&nbsp;' : ''}${m.time||''}</div>
+        ${m.note ? `<div class="msg-time" style="color:var(--text3);margin-top:3px;font-style:italic">${esc(m.note)}</div>` : ''}
+      </div>
+      <div class="msg-body">${esc(m.text)}${tagHtml ? '<div class="msg-tags">'+tagHtml+'</div>' : ''}</div>
+      <div class="msg-actions">
+        <button class="msg-action-btn" onclick="openPopover(${m.id})">Markieren</button>
+        ${m.tags.length ? `<button class="msg-action-btn" onclick="clearMsgTags(${m.id})">×</button>` : ''}
+      </div>
+    </div>`;
+  }
+  list.innerHTML = html;
+}
+
+function renderPatterns() {
+  const list = document.getElementById('msg-list');
+  const tagged = state.messages.filter(m => m.tags.length > 0);
+
+  // By tag category
+  const byTag = {};
+  for (const t of TAG_DEFS) byTag[t] = [];
+  for (const m of tagged) m.tags.forEach(t => { if (byTag[t]) byTag[t].push(m); });
+
+  // By speaker stats
+  const bySpeaker = {};
+  for (const m of state.messages) {
+    if (!bySpeaker[m.sender]) bySpeaker[m.sender] = {total:0,tagged:0};
+    bySpeaker[m.sender].total++;
+    if (m.tags.length) bySpeaker[m.sender].tagged++;
+  }
+
+  // Word frequency (tagged messages only)
+  const stopwords = new Set(['ich','du','er','sie','es','wir','ihr','das','die','der','den','dem','des','ein','eine','einer','eines','und','oder','aber','auch','nicht','dass','mit','für','auf','ist','war','hat','wird','hab','habe','bin','bist','sind','werden','haben','noch','schon','jetzt','dann','wenn','als','wie','was','wo','wann','weil','doch','nur','mir','dir','uns','euch','ihm','ihr','sich','mich','dich','ja','nein','so','an','in','zu','von','aus','bei','nach','über','unter','vor','hinter','neben','zwischen','man','mal','denn','sehr','kein','keine','mehr','alle','alles']);
+  const wordFreq = {};
+  for (const m of tagged) {
+    m.text.toLowerCase().replace(/[^a-züäöß\s]/g,' ').split(/\s+/).filter(w=>w.length>3&&!stopwords.has(w)).forEach(w=>{ wordFreq[w]=(wordFreq[w]||0)+1; });
+  }
+  const topWords = Object.entries(wordFreq).filter(([,n])=>n>=2).sort(([,a],[,b])=>b-a).slice(0,15);
+  const maxFreq = topWords[0]?.[1] || 1;
+
+  let html = '';
+
+  // Kategorie-Übersicht
+  const withEntries = TAG_DEFS.filter(t => byTag[t].length > 0);
+  if (withEntries.length > 0) {
+    html += `<div class="pattern-card"><div class="pattern-card-title">Kategorien <span class="badge" style="background:var(--surface2);color:var(--text3)">${tagged.length} markiert</span></div><ul class="pattern-list">`;
+    for (const t of withEntries) {
+      html += `<li><strong>${t}</strong>: ${byTag[t].length}× <span>${byTag[t].slice(0,1).map(m=>m.text.substring(0,40)+'…').join('')}</span></li>`;
+    }
+    html += `</ul></div>`;
+  }
+
+  // Personen
+  html += `<div class="pattern-card"><div class="pattern-card-title">Personen</div><ul class="pattern-list">`;
+  for (const [name,s] of Object.entries(bySpeaker).sort(([,a],[,b])=>b.total-a.total)) {
+    const pct = s.total ? Math.round(s.tagged/s.total*100) : 0;
+    html += `<li><strong style="color:${speakerColor(name)}">${esc(name)}</strong>: ${s.total} Nachrichten <span>· ${s.tagged} markiert (${pct}%)</span></li>`;
+  }
+  html += `</ul></div>`;
+
+  // Wortfrequenz
+  if (topWords.length > 0) {
+    html += `<div class="pattern-card"><div class="pattern-card-title">Häufige Wörter <span class="badge" style="background:var(--surface2);color:var(--text3)">in markierten Nachrichten</span></div><div class="freq-bar-wrap">`;
+    for (const [word,n] of topWords) {
+      const pct = Math.round(n/maxFreq*100);
+      html += `<div class="freq-item"><span class="freq-label">${esc(word)}</span><div class="freq-bar"><div class="freq-fill" style="width:${pct}%"></div></div><span class="freq-count">${n}×</span></div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  // Tagged messages by category
+  for (const t of withEntries) {
+    html += `<div class="pattern-card" style="grid-column:1/-1"><div class="pattern-card-title" style="text-transform:capitalize">${t} <span class="badge" style="background:var(--surface2);color:var(--text3)">${byTag[t].length}</span></div><ul class="pattern-list">`;
+    for (const m of byTag[t].slice(0,8)) {
+      html += `<li><strong style="color:${speakerColor(m.sender)}">${esc(m.sender)}</strong>${m.date?' <span>'+m.date.replace(/^\d{4}-/,'')+'</span>':''}: ${esc(m.text.substring(0,120))}${m.text.length>120?'…':''}</li>`;
+    }
+    if (byTag[t].length > 8) html += `<li style="color:var(--text3)">… und ${byTag[t].length-8} weitere</li>`;
+    html += `</ul></div>`;
+  }
+
+  if (!html) html = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">Noch keine Muster erkennbar</div><div class="empty-sub">Markiere Nachrichten mit Kategorien, um hier Muster zu sehen.</div></div>`;
+
+  list.className = 'pattern-panel';
+  list.innerHTML = html;
+}
+
+function render() {
+  renderStats();
+  renderSpeakers();
+  if (currentView === 'patterns') {
+    document.getElementById('msg-list').className = 'pattern-panel';
+    renderPatterns();
+  } else {
+    document.getElementById('msg-list').className = 'msg-list';
+    renderMessages();
+  }
+}
+
+function renderStats() {
+  const msgs = state.messages;
+  const days = new Set(msgs.map(m=>m.date).filter(Boolean));
+  document.getElementById('stat-total').textContent = msgs.length;
+  document.getElementById('stat-tagged').textContent = msgs.filter(m=>m.tags.length>0).length;
+  document.getElementById('stat-speakers').textContent = state.speakers.length;
+  document.getElementById('stat-days').textContent = days.size;
+}
+
+function renderSpeakers() {
+  const list = document.getElementById('speaker-list');
+  if (!state.speakers.length) { list.innerHTML = '<div style="font-size:12px;color:var(--text3)">Noch keine Personen</div>'; return; }
+  list.innerHTML = state.speakers.map(sp => {
+    const count = state.messages.filter(m=>m.sender===sp.name).length;
+    const active = activeFilters.speaker === sp.name;
+    return `<div class="speaker-item${active?' active':''}" onclick="toggleSpeaker('${esc(sp.name)}')">
+      <div class="speaker-dot" style="background:${sp.color}"></div>
+      <div class="speaker-name">${esc(sp.name)}</div>
+      <div class="speaker-count">${count}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── ACTIONS ──
+function toggleSpeaker(name) {
+  activeFilters.speaker = activeFilters.speaker === name ? null : name;
+  render();
+}
+
+function clearMsgTags(id) {
+  const m = state.messages.find(m=>m.id===id);
+  if (m) { m.tags=[]; m.note=''; saveState(); render(); }
+}
+
+// ── POPOVER ──
+function openPopover(id) {
+  const m = state.messages.find(m=>m.id===id);
+  if (!m) return;
+  popoverMsgId = id;
+  popoverSelectedTags = new Set(m.tags);
+  document.getElementById('popover-preview').textContent = m.text.substring(0,180)+(m.text.length>180?'…':'');
+  document.getElementById('popover-note').value = m.note || '';
+  const grid = document.getElementById('popover-tags');
+  grid.innerHTML = TAG_DEFS.map(t =>
+    `<span class="popover-tag${popoverSelectedTags.has(t)?' selected':''}" data-tag="${t}" onclick="togglePopoverTag('${t}')">${t}</span>`
+  ).join('');
+  document.getElementById('popover-overlay').classList.remove('hidden');
+}
+
+function togglePopoverTag(t) {
+  popoverSelectedTags.has(t) ? popoverSelectedTags.delete(t) : popoverSelectedTags.add(t);
+  document.querySelectorAll('.popover-tag').forEach(el => {
+    el.classList.toggle('selected', popoverSelectedTags.has(el.dataset.tag));
+  });
+}
+
+function savePopover() {
+  const m = state.messages.find(m=>m.id===popoverMsgId);
+  if (m) { m.tags=[...popoverSelectedTags]; m.note=document.getElementById('popover-note').value.trim(); saveState(); }
+  closePopover(); render();
+}
+
+function closePopover() { document.getElementById('popover-overlay').classList.add('hidden'); popoverMsgId=null; }
+
+// ── EXPORT ──
+function exportData() {
+  const tagged = state.messages.filter(m=>m.tags.length>0);
+  const out = {
+    export_date: new Date().toISOString().substring(0,10),
+    total_messages: state.messages.length,
+    tagged_messages: tagged.length,
+    speakers: state.speakers,
+    tagged: tagged.map(({id,date,time,sender,text,tags,note})=>({id,date,time,sender,text,tags,note})),
+  };
+  const blob = new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement('a'),{href:url,download:`chat-analyse-${Date.now()}.json`});
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// ── UTILS ──
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── EVENTS ──
+document.getElementById('btn-parse').addEventListener('click', () => {
+  const raw = document.getElementById('paste-area').value.trim();
+  const format = document.getElementById('format-select').value;
+  if (!raw) return;
+  parseChat(raw, format);
+  currentView = 'messages';
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view==='messages'));
+  document.getElementById('msg-list').className = 'msg-list';
+  render();
+});
+
+document.getElementById('btn-export').addEventListener('click', exportData);
+
+document.getElementById('btn-clear').addEventListener('click', () => {
+  if (!confirm('Alle Nachrichten und Markierungen löschen?')) return;
+  state = { messages:[], speakers:[] }; saveState(); activeFilters={speaker:null,tags:new Set(),search:''}; render();
+});
+
+document.getElementById('search').addEventListener('input', e => {
+  activeFilters.search = e.target.value; render();
+});
+
+document.querySelectorAll('.view-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentView = btn.dataset.view;
+    document.querySelectorAll('.view-btn').forEach(b=>b.classList.toggle('active',b===btn));
+    document.getElementById('msg-list').className = currentView==='patterns' ? 'pattern-panel' : 'msg-list';
+    render();
+  });
+});
+
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const t = chip.dataset.tag;
+    if (activeFilters.tags.has(t)) activeFilters.tags.delete(t); else activeFilters.tags.add(t);
+    chip.classList.toggle('active', activeFilters.tags.has(t));
+    render();
+  });
+});
+
+document.getElementById('popover-save').addEventListener('click', savePopover);
+document.getElementById('popover-cancel').addEventListener('click', closePopover);
+document.getElementById('popover-overlay').addEventListener('click', e => { if(e.target===e.currentTarget) closePopover(); });
+
+// ── INIT ──
+render();
+</script>
+</body>
+</html>
